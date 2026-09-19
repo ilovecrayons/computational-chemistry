@@ -8,7 +8,7 @@ import {
   ArrowCounterClockwise,
 } from "@phosphor-icons/react";
 import type { Gender, Intent, Me, Profile, Tasteprint } from "@/lib/contracts";
-import { ageOn } from "@/features/profile/profile";
+import { ageOn } from "@/features/profile/age";
 
 import { TONES } from "@/features/memes/taxonomy";
 import { api, Dialog, ErrorNote, RequestError, SectionTitle, Tags } from "./ui";
