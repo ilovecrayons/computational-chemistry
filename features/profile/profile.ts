@@ -38,7 +38,6 @@ const locationText = z
 const MAX_PHOTO_BYTES = 900_000;
 
 function validPhotoRef(value: string): boolean {
-  if (/^\/demo\/person-(?:[1-9]|10)\.svg$/.test(value)) return true;
   const match =
     /^data:image\/(?:jpeg|png|webp);base64,([A-Za-z0-9+/=\s]+)$/i.exec(value);
   if (!match) return false;
@@ -61,6 +60,7 @@ function normalizePreferences(value: Preferences): Preferences {
   return {
     ...value,
     radiusMiles: value.radiusMiles ?? 25,
+    minMatchPercent: value.minMatchPercent ?? 0,
   };
 }
 
@@ -69,6 +69,10 @@ export const profileInput = z.object({
   dob: dateOfBirth,
   bio: z.string().trim().max(400).optional().default(""),
   town: locationText,
+  state: z.string().trim().min(1).max(80),
+  country: z.string().trim().min(1).max(80),
+  stateCode: z.string().trim().min(1).max(10),
+  countryCode: z.enum(["US", "CA", "GB", "AU"]),
   matchLocation: locationText,
   gender: z.enum(["woman", "man", "nonbinary"]),
   photos: z.array(photoRef).min(1, "Add at least one photo.").max(6),
@@ -96,6 +100,7 @@ export const profileInput = z.object({
         z.literal(50),
         z.literal(100),
       ]),
+      minMatchPercent: z.number().int().min(0).max(100).default(0),
     })
     .refine((value) => value.minAge <= value.maxAge, {
       message: "Maximum age must be at least the minimum age.",
@@ -130,6 +135,8 @@ export function publicProfile(row: ProfileRow): PublicProfile {
     name: row.name,
     age: ageOn(row.dob),
     town,
+    state: row.state,
+    stateCode: row.stateCode,
     bio: row.bio,
     photo: photos[0] ?? row.photo,
     photos,
@@ -149,6 +156,10 @@ export function privateProfile(row: ProfileRow): Profile {
     dob: row.dob,
     bio: row.bio,
     town,
+    state: row.state,
+    country: row.country,
+    stateCode: row.stateCode,
+    countryCode: row.countryCode,
     matchLocation: row.matchLocation || town,
     gender: row.gender,
     photo: photos[0] ?? row.photo,

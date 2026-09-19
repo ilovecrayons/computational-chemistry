@@ -6,6 +6,8 @@ type SwipeHandlers = {
   onLeft?: () => void;
   onRight?: () => void;
   onUp?: () => void;
+  onDown?: () => void;
+  onGesture?: () => void;
   disabled?: boolean;
 };
 
@@ -13,6 +15,8 @@ export function useSwipe({
   onLeft,
   onRight,
   onUp,
+  onDown,
+  onGesture,
   disabled = false,
 }: SwipeHandlers) {
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -32,12 +36,14 @@ export function useSwipe({
     const dy = event.clientY - start.current.y;
     start.current = null;
     if (Math.abs(dx) < 48 && Math.abs(dy) < 48) return;
+    onGesture?.();
     if (Math.abs(dx) > Math.abs(dy)) {
       if (dx < -48) onLeft?.();
       else if (dx > 48) onRight?.();
       return;
     }
     if (dy < -48) onUp?.();
+    else if (dy > 48) onDown?.();
   }
 
   function onPointerCancel() {

@@ -7,13 +7,16 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
   ArrowRight,
   DotsThree,
+  Egg,
+  EggCrack,
   Heart,
   PaperPlaneTilt,
+  ShareNetwork,
   X,
 } from "@phosphor-icons/react";
 import type {
@@ -30,58 +33,37 @@ import {
   ErrorNote,
   Loading,
   MemeMedia,
+  ProfileVisual,
   RequestError,
   SectionTitle,
   Tags,
 } from "./ui";
 import { useSwipe } from "./use-swipe";
+function pause(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
 
 function Evidence({ compatibility }: { compatibility: Compatibility }) {
   return (
     <div className="compatibility">
       <div className="score-line">
-        <span>
-          {compatibility.score === null
-            ? "Getting calibrated"
-            : "Meme compatibility"}
-        </span>
-        {compatibility.score !== null && (
-          <strong>
-            {compatibility.score}
-            <small>%</small>
-          </strong>
-        )}
+        <span>Meme match</span>
+        <strong>
+          {compatibility.score}
+          <small>%</small>
+        </strong>
       </div>
-      <p>{compatibility.explanation}</p>
-      <Tags tags={compatibility.sharedTags} />
-      <details className="explanation">
-        <summary>Why this match?</summary>
-        <p>
-          {compatibility.score === null
-            ? "Both people need at least 10 positive reactions before a score appears."
-            : `80% weighted tag similarity (${Math.round(compatibility.cosine * 100)}%) + 20% strongest-tag overlap (${Math.round(compatibility.jaccard * 100)}%).`}
-        </p>
-        <p>A ranking aid for shared humor. Not a scientific prediction.</p>
-        {compatibility.sharedMemes.length > 0 && (
-          <>
-            <h3>You both laughed at these</h3>
-            <div className="shared-memes">
-              {compatibility.sharedMemes.map((meme) => (
-                <MemeMedia key={meme.id} meme={meme} compact />
-              ))}
-            </div>
-          </>
-        )}
-      </details>
     </div>
   );
 }
 export function Safety({
   targetId,
+  targetName = "this person",
   onDone,
   allowUnmatch = false,
 }: {
   targetId: string;
+  targetName?: string;
   onDone: () => void;
   allowUnmatch?: boolean;
 }) {
@@ -110,11 +92,31 @@ export function Safety({
       setBusy(false);
     }
   }
+  async function shareProfile() {
+    const url = `${window.location.origin}/?view=matches&profile=${encodeURIComponent(targetId)}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${targetName} on Crackd`,
+          text: `Check out ${targetName}'s profile.`,
+          url,
+        });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        throw new Error("Profile sharing is unavailable in this browser.");
+      }
+      setOpen(false);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setError((e as Error).message);
+    }
+  }
   return (
     <>
       <button
         className="icon-button"
-        aria-label="Safety options"
+        aria-label="Profile options"
         onClick={() => setOpen(true)}
       >
         <DotsThree size={28} weight="bold" />
@@ -124,7 +126,7 @@ export function Safety({
           title={
             action
               ? `${action[0].toUpperCase()}${action.slice(1)} this person?`
-              : "Safety & boundaries"
+              : "Profile options"
           }
           onClose={() => {
             setOpen(false);
@@ -133,6 +135,10 @@ export function Safety({
         >
           {!action ? (
             <div className="stack">
+              <button className="button secondary" onClick={shareProfile}>
+                <ShareNetwork size={20} />
+                Share profile
+              </button>
               {allowUnmatch && (
                 <button
                   className="button secondary"
@@ -153,6 +159,7 @@ export function Safety({
               >
                 Report concern
               </button>
+              <ErrorNote error={error} />
             </div>
           ) : (
             <div className="stack">
@@ -160,8 +167,8 @@ export function Safety({
                 {action === "block"
                   ? "This removes your match and hides each of you from the other. They will not be notified."
                   : action === "unmatch"
-                    ? "You will no longer be able to message each other. This cannot be undone in this prototype."
-                    : "Your report is saved privately for prototype administrators. For urgent danger, contact local emergency services."}
+                    ? "You will no longer be able to message each other. This cannot be undone."
+                    : "Your report is saved privately for support. For urgent danger, contact local emergency services."}
               </p>
               {action === "report" && (
                 <label>
@@ -203,22 +210,38 @@ export function DiscoverScreen({
   me,
   onChat,
   onMemes,
+  onProfile,
+  onViewProfile,
 }: {
   me: Me;
   onChat: (matchId: string) => void;
   onMemes: () => void;
+  onProfile: () => void;
+  onViewProfile: (profileId: string) => void;
 }) {
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [matched, setMatched] = useState<Match | null>(null);
-  const [notice, setNotice] = useState("");
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [showDetails, setShowDetails] = useState(true);
+  const [outgoing, setOutgoing] = useState<"left" | "right" | null>(null);
+  const [eggPhase, setEggPhase] = useState<"cracking" | "whole" | null>(null);
+  const suppressPhotoTapUntil = useRef(0);
   const reduced = useReducedMotion();
   const load = useCallback(() => {
     setError(null);
     api<{ candidates: Candidate[] }>("/api/candidates")
-      .then((data) => setCandidates(data.candidates))
+      .then(async (data) => {
+        if (data.candidates.length > 0) {
+          setCandidates(data.candidates);
+          return;
+        }
+        const browse = await api<{ candidates: Candidate[] }>(
+          "/api/candidates?browse=1",
+        );
+        setCandidates(browse.candidates);
+      })
       .catch((e) => setError(e.message));
   }, []);
   useEffect(load, [load]);
@@ -226,39 +249,65 @@ export function DiscoverScreen({
     if (busy) return;
     setBusy(true);
     setError(null);
+    const response = api<{ match: Match | null }>(
+      "/api/profile-decisions",
+      { targetId, decision },
+    );
+    void response.catch(() => undefined);
     try {
-      const data = await api<{ match: Match | null }>(
-        "/api/profile-decisions",
-        { targetId, decision },
-      );
+      if (decision === "like") {
+        setEggPhase("cracking");
+        await pause(360);
+        setEggPhase("whole");
+        await pause(520);
+        setOutgoing("right");
+        await pause(420);
+      } else {
+        setOutgoing("left");
+        await pause(420);
+      }
+      const data = await response;
       setCandidates((previous) => previous!.filter((c) => c.id !== targetId));
       setPhotoIndex(0);
       if (data.match) setMatched(data.match);
-      else
-        setNotice(
-          decision === "like"
-            ? "Like sent. Mutual interest makes it a match."
-            : "Passed. Keep finding your people.",
-        );
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      setOutgoing(null);
+      setEggPhase(null);
       setBusy(false);
     }
   }
   const candidate = candidates?.[0];
-  const photos = candidate?.photos?.length
-    ? candidate.photos
-    : candidate?.photo
-      ? [candidate.photo]
-      : [];
+  const nextCandidate = candidates?.[1];
+  const photos = (
+    candidate?.photos?.length
+      ? candidate.photos
+      : candidate?.photo
+        ? [candidate.photo]
+        : []
+  ).filter((photo) => photo && !photo.startsWith("/demo/"));
+  function photoTap() {
+    if (busy || !photos.length) return;
+    if (Date.now() < suppressPhotoTapUntil.current) return;
+    if (showDetails) {
+      setShowDetails(false);
+      return;
+    }
+    setPhotoIndex((value) => (value + 1) % photos.length);
+  }
   const swipe = useSwipe({
     disabled: busy || !candidate,
     onLeft: () => candidate && void decide(candidate.id, "pass"),
     onRight: () => candidate && void decide(candidate.id, "like"),
+    onUp: () => setShowDetails(true),
+    onGesture: () => {
+      suppressPhotoTapUntil.current = Date.now() + 400;
+    },
   });
   useEffect(() => {
     setPhotoIndex(0);
+    setShowDetails(true);
   }, [candidate?.id]);
   return (
     <section className="tiktok-feed discover-feed">
@@ -268,79 +317,121 @@ export function DiscoverScreen({
           Try again
         </button>
       )}
-      <p className="live-notice discover-notice" aria-live="polite">
-        {notice}
-      </p>
+
       {!candidates && !error ? (
         <Loading />
       ) : candidate ? (
         <>
           <div className="tiktok-stage discover-stage" {...swipe}>
-            <div className="discover-photos">
-              {photos.map((photo, index) => (
-                <img
-                  key={`${candidate.id}-${index}`}
-                  src={photo}
-                  alt=""
-                  className={index === photoIndex ? "active" : ""}
-                  hidden={index !== photoIndex}
+            {nextCandidate && (
+              <div className="discover-next-card" aria-hidden>
+                <ProfileVisual
+                  name={nextCandidate.name}
+                  src={nextCandidate.photo}
+                  className="discover-next-visual"
                 />
-              ))}
-              {photos.length > 1 && (
-                <div className="photo-dots" aria-hidden>
-                  {photos.map((_, index) => (
-                    <span
-                      key={index}
-                      className={index === photoIndex ? "active" : ""}
-                    />
-                  ))}
-                </div>
+              </div>
+            )}
+            <div
+              className={`discover-current-card ${outgoing ? `outgoing-${outgoing}` : ""}`}
+            >
+            <div
+              className={`discover-photos ${showDetails ? "details-visible" : "photos-only"}`}
+              role="button"
+              tabIndex={0}
+              aria-label={
+                showDetails
+                  ? "Tap to view this profile's photos"
+                  : `View photo ${photoIndex + 1} of ${Math.max(photos.length, 1)}`
+              }
+              onClick={photoTap}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  photoTap();
+                }
+              }}
+            >
+              {photos.length > 0 ? (
+                photos.map((photo, index) => (
+                  <img
+                    key={`${candidate.id}-${index}`}
+                    src={photo}
+                    alt={`${candidate.name}'s profile photo ${index + 1}`}
+                    hidden={index !== photoIndex}
+                  />
+                ))
+              ) : (
+                <ProfileVisual
+                  name={candidate.name}
+                  className="discover-profile-visual"
+                />
               )}
-              {photos.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className="photo-nav prev"
-                    aria-label="Previous photo"
-                    onClick={() =>
-                      setPhotoIndex(
-                        (value) => (value - 1 + photos.length) % photos.length,
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="photo-nav next"
-                    aria-label="Next photo"
-                    onClick={() =>
-                      setPhotoIndex((value) => (value + 1) % photos.length)
-                    }
-                  />
-                </>
+              {!showDetails && (
+                <span className="photo-mode-hint">
+                  Tap for next photo · swipe up for details
+                </span>
               )}
             </div>
-            <div className="discover-overlay">
+            {showDetails && (
+              <div className="discover-overlay">
               <div className="discover-heading">
                 <div>
-                  <h2>
-                    {candidate.name}, {candidate.age}
-                  </h2>
-                  <p>{candidate.town || candidate.location}</p>
+                  <button
+                    type="button"
+                    className="discover-profile-link"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onViewProfile(candidate.id);
+                    }}
+                  >
+                    <h2>
+                      {candidate.name}, {candidate.age}
+                    </h2>
+                  </button>
+                  <p>
+                    {candidate.town || candidate.location}
+                    {candidate.stateCode
+                      ? `, ${candidate.stateCode}`
+                      : candidate.state
+                        ? `, ${candidate.state}`
+                        : ""}
+                  </p>
                 </div>
-                <Safety targetId={candidate.id} onDone={load} />
+                <Safety
+                  targetId={candidate.id}
+                  targetName={candidate.name}
+                  onDone={load}
+                />
               </div>
-              {candidate.interests.length > 0 && (
-                <Tags tags={candidate.interests} />
-              )}
-              {candidate.humorTags.length > 0 && (
-                <div className="discover-tags">
-                  <span className="discover-tags-label">Humor</span>
-                  <Tags tags={candidate.humorTags} />
-                </div>
-              )}
               {candidate.bio && <p className="discover-bio">{candidate.bio}</p>}
               <Evidence compatibility={candidate.compatibility} />
             </div>
+              )}
+            </div>
+            <AnimatePresence>
+              {eggPhase && (
+                <motion.div
+                  key={eggPhase}
+                  className="match-egg-animation"
+                  initial={{ opacity: 0, scale: 0.7, y: 18 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 1.12, y: -12 }}
+                  transition={{ duration: 0.28 }}
+                >
+                  {eggPhase === "cracking" ? (
+                    <EggCrack size={92} weight="duotone" aria-hidden />
+                  ) : (
+                    <Egg size={92} weight="duotone" aria-hidden />
+                  )}
+                  <p>
+                    {eggPhase === "cracking"
+                      ? "Uncracking the match…"
+                      : "Putting your weird back together…"}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           <div className="tiktok-dock reaction-dock" aria-busy={busy}>
             <button
@@ -349,7 +440,7 @@ export function DiscoverScreen({
               onClick={() => void decide(candidate.id, "pass")}
             >
               <X size={22} weight="bold" aria-hidden />
-              <span>Pass</span>
+              <span>Reject</span>
             </button>
             <button
               className="reaction-pill lol"
@@ -357,19 +448,23 @@ export function DiscoverScreen({
               onClick={() => void decide(candidate.id, "like")}
             >
               <Heart size={22} weight="fill" aria-hidden />
-              <span>Like</span>
+              <span>Match</span>
             </button>
           </div>
-          <p className="swipe-hint">Swipe ← pass · → like</p>
         </>
       ) : (
         candidates && (
           <Empty
             title="Compatible chaos takes a moment."
             action={
-              <button className="button primary full" onClick={onMemes}>
-                Judge more memes <ArrowRight size={20} />
-              </button>
+              <div className="stack">
+                <button className="button primary full" onClick={onMemes}>
+                  Judge more memes <ArrowRight size={20} />
+                </button>
+                <button className="text-button full" onClick={onProfile}>
+                  Update private preferences
+                </button>
+              </div>
             }
           >
             Your current preferences and decisions have narrowed the field. Try
@@ -389,9 +484,17 @@ export function DiscoverScreen({
             transition={{ duration: reduced ? 0.1 : 0.6 }}
           >
             <div className="matched-portraits">
-              <img src={me.profile!.photo} alt={me.profile!.name} />
+              <ProfileVisual
+                name={me.profile!.name}
+                src={me.profile!.photo}
+                className="matched-profile-mark"
+              />
               <Heart size={32} weight="fill" aria-hidden />
-              <img src={matched.profile.photo} alt={matched.profile.name} />
+              <ProfileVisual
+                name={matched.profile.name}
+                src={matched.profile.photo}
+                className="matched-profile-mark"
+              />
             </div>
             <h1>
               Same damage.
@@ -486,12 +589,9 @@ export function ChatsScreen({
                   {match.lastMessage || "A shared meme. An excellent excuse."}
                 </p>
                 <span className="supporting">
-                  {match.compatibility.score === null
-                    ? "Still calibrating"
-                    : `${match.compatibility.score}% meme compatibility`}
+                  {`${match.compatibility.score}% meme match`}
                 </span>
               </div>
-              <ArrowRight size={18} />
             </button>
           ))}
         </div>
@@ -669,12 +769,15 @@ export function Conversation({
             <div>
               <h1>{match.profile.name}</h1>
               <span className="supporting">
-                {match.compatibility.score === null
-                  ? "Mutual interest"
-                  : `${match.compatibility.score}% shared nonsense`}
+                {`${match.compatibility.score}% shared nonsense`}
               </span>
             </div>
-            <Safety targetId={match.profile.id} allowUnmatch onDone={onBack} />
+            <Safety
+              targetId={match.profile.id}
+              targetName={match.profile.name}
+              allowUnmatch
+              onDone={onBack}
+            />
           </>
         ) : (
           <h1>Conversation</h1>

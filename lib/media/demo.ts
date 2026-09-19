@@ -15,22 +15,10 @@ import { db } from "../../db";
 import { memes } from "../../db/schema";
 import { demoSpecs, TAXONOMY_VERSION } from "../../features/memes/taxonomy";
 import { config } from "../config";
-import { illustrateMeme, illustratePortrait } from "./illustrations";
+import { illustrateMeme } from "./illustrations";
 import { atomicMediaWrite, mediaPath } from "./storage";
 
 const execute = promisify(execFile);
-const portraits = [
-  "Alex",
-  "Jules",
-  "Sam",
-  "River",
-  "Morgan",
-  "Casey",
-  "Taylor",
-  "Robin",
-  "Avery",
-  "Quinn",
-];
 let setup: Promise<void> | undefined;
 
 export async function ensureDemoMedia(): Promise<void> {
@@ -45,16 +33,6 @@ export async function ensureDemoMedia(): Promise<void> {
 
 async function createLibrary(): Promise<void> {
   await mkdir(config.mediaDir, { recursive: true });
-  const portraitDirectory = path.join(process.cwd(), "public", "demo");
-  await mkdir(portraitDirectory, { recursive: true });
-  await Promise.all(
-    portraits.map((name, index) =>
-      writeFile(
-        path.join(portraitDirectory, `person-${index + 1}.svg`),
-        illustratePortrait(index, name),
-      ),
-    ),
-  );
   let ffmpegChecked = false;
   for (const spec of demoSpecs) {
     const existing = db.select().from(memes).where(eq(memes.id, spec.id)).get();

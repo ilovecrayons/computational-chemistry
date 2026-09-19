@@ -1,4 +1,4 @@
-# Computational Chemistry: Technical Implementation Plan
+# Crackd: Technical Implementation Plan
 
 ## 1. Goal
 

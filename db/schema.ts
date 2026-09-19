@@ -10,6 +10,7 @@ import type {
   Compatibility,
   Gender,
   Intent,
+  NotificationType,
   Preferences,
   Reaction,
 } from "../lib/contracts";
@@ -93,6 +94,10 @@ export const profiles = sqliteTable("profiles", {
   bio: text("bio").notNull(),
   location: text("location").notNull(),
   town: text("town").notNull().default(""),
+  state: text("state").notNull().default(""),
+  country: text("country").notNull().default(""),
+  stateCode: text("state_code").notNull().default(""),
+  countryCode: text("country_code").notNull().default("US"),
   matchLocation: text("match_location").notNull().default(""),
   gender: text("gender").$type<Gender>().notNull(),
   photo: text("photo").notNull(),
@@ -168,6 +173,34 @@ export const reactions = sqliteTable(
     primaryKey({ columns: [table.userId, table.memeId] }),
     index("reactions_meme_idx").on(table.memeId),
   ],
+);
+export const postComments = sqliteTable(
+  "post_comments",
+  {
+    id: text("id").primaryKey(),
+    memeId: text("meme_id")
+      .notNull()
+      .references(() => memes.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [index("post_comments_meme_idx").on(table.memeId)],
+);
+export const savedMemes = sqliteTable(
+  "saved_memes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    memeId: text("meme_id")
+      .notNull()
+      .references(() => memes.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.memeId] })],
 );
 export const profileDecisions = sqliteTable(
   "profile_decisions",
@@ -249,3 +282,31 @@ export const reports = sqliteTable("reports", {
   reason: text("reason").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    recipientId: text("recipient_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    actorId: text("actor_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    type: text("type").$type<NotificationType>().notNull(),
+    message: text("message").notNull(),
+    memeId: text("meme_id").references(() => memes.id, {
+      onDelete: "cascade",
+    }),
+    matchId: text("match_id").references(() => matches.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    readAt: integer("read_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("notifications_recipient_idx").on(
+      table.recipientId,
+      table.createdAt,
+    ),
+  ],
+);

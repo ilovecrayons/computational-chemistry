@@ -1,10 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { and, eq, lte } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db";
-import { memes, reactions } from "../../db/schema";
+import { memes, notifications, reactions } from "../../db/schema";
 import { ApiFailure } from "../../lib/api";
 import type { Reaction } from "../../lib/contracts";
-import { loadTastes, memeDTO, type MemeRow } from "../matching/engine";
+import { loadTastes, type MemeRow } from "../matching/engine";
+import { socialMemeDTO } from "../social/social";
 import { requireProfile } from "../profile/profile";
 import { TOPICS } from "./taxonomy";
 
@@ -123,7 +125,7 @@ export function getFeed(userId: string, cursor: string | null) {
     ];
   }
   return {
-    memes: displayPage.map(memeDTO),
+    memes: displayPage.map((meme) => socialMemeDTO(meme, userId)),
     nextCursor:
       available.length > page.length && last
         ? Buffer.from(
@@ -163,6 +165,25 @@ export function setReaction(
       set: { reaction, updatedAt: now },
     })
     .run();
+  if (
+    meme.requestedBy &&
+    meme.requestedBy !== userId &&
+    reaction !== "pass"
+  ) {
+    db.insert(notifications)
+      .values({
+        id: randomUUID(),
+        recipientId: meme.requestedBy,
+        actorId: userId,
+        type: "like",
+        message: "liked your post",
+        memeId,
+        matchId: null,
+        createdAt: now,
+        readAt: null,
+      })
+      .run();
+  }
   return {
     tags: Object.keys(meme.tags).slice(0, 3),
     reactionCount: db

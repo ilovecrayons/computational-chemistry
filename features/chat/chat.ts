@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db";
-import { memes, messages, reactions } from "../../db/schema";
+import { memes, messages, notifications, reactions } from "../../db/schema";
 import { ApiFailure } from "../../lib/api";
 import type { ChatMessage } from "../../lib/contracts";
 import { authorizedMatch, matchDTO } from "../matches/matches";
@@ -128,6 +128,19 @@ export function sendMessage(
       createdAt: new Date(),
     };
     tx.insert(messages).values(row).run();
+    tx.insert(notifications)
+      .values({
+        id: randomUUID(),
+        recipientId: match.userA === userId ? match.userB : match.userA,
+        actorId: userId,
+        type: "message",
+        message: "sent you a message",
+        memeId: row.memeId,
+        matchId,
+        createdAt: row.createdAt,
+        readAt: null,
+      })
+      .run();
     return {
       message: {
         id: row.id,

@@ -85,10 +85,18 @@ export async function atomicMediaWrite(
   relative: string,
   content: string | Uint8Array,
 ): Promise<void> {
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(relative))
+  const segments = relative.split(/[\\/]/);
+  if (
+    !relative ||
+    path.isAbsolute(relative) ||
+    segments.some(
+      (segment) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(segment),
+    )
+  )
     throw new Error("Invalid asset name");
   await mkdir(config.mediaDir, { recursive: true });
   const destination = path.join(config.mediaDir, relative);
+  await mkdir(path.dirname(destination), { recursive: true });
   const temporary = `${destination}.${randomUUID()}.part`;
   try {
     const file = await open(temporary, "wx", 0o600);
@@ -99,7 +107,7 @@ export async function atomicMediaWrite(
       await file.close();
     }
     await rename(temporary, destination);
-    const directory = await open(config.mediaDir, "r");
+    const directory = await open(path.dirname(destination), "r");
     try {
       await directory.sync();
     } finally {
