@@ -46,5 +46,3 @@ export function tagsFor(input: MemeSpec): Record<string, number> {
 export function buildPrompt(input: MemeSpec): string {
   return `Create one original vertical 9:16 internet meme. Tone: ${input.tone}. Format: ${input.format}. Topic${input.topics.length > 1 ? "s" : ""}: ${input.topics.join(" and ")}. Chaos intensity: ${input.chaos}/5. Use a striking, readable illustrated composition, one specific relatable joke, and large high-contrast English meme text with generous safe margins. Keep it funny without relying on sound. No logos, real people's likenesses, sexual content, hate, harassment, graphic violence, self-harm, or jokes targeting protected characteristics. Do not print the taxonomy labels, instructions, or metadata. All characters are fictional adults or illustrated animals.`;
 }
-
-

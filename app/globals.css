@@ -380,9 +380,24 @@ button {
   gap: 16px;
   padding-block: 16px;
 }
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
 .skeleton {
-  background: #e8e4dc;
+  background: linear-gradient(
+    100deg,
+    var(--surface) 20%,
+    var(--divider) 40%,
+    var(--surface) 60%
+  );
+  background-size: 250% 100%;
   border-radius: 16px;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
 }
 .loading .skeleton {
   height: 80px;
@@ -393,6 +408,93 @@ button {
 .loading .skeleton:last-of-type {
   height: 48px;
   width: 70%;
+}
+.card-skeleton-list {
+  display: grid;
+  gap: 12px;
+  padding-block: 16px;
+}
+.card-skeleton {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 128px;
+  padding: 12px;
+  border: 1px solid var(--divider);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.card-skeleton-media {
+  width: 96px;
+  height: 104px;
+}
+.card-skeleton-copy {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+}
+.card-skeleton-line {
+  width: 82%;
+  height: 14px;
+  border-radius: 999px;
+}
+.card-skeleton-line.wide {
+  width: 100%;
+  height: 20px;
+}
+.card-skeleton-line.short {
+  width: 54%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+.profile-visual.media-loading,
+.meme-media > img.media-loading,
+.meme-media > video.media-loading {
+  background: linear-gradient(
+    100deg,
+    var(--surface) 20%,
+    var(--divider) 40%,
+    var(--surface) 60%
+  );
+  background-size: 250% 100%;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+}
+.card-skeleton-list.discover-skeleton {
+  height: 100%;
+  padding: 0;
+}
+.discover-skeleton .card-skeleton {
+  position: relative;
+  display: block;
+  height: 100%;
+  min-height: 240px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.discover-skeleton .card-skeleton-media {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.discover-skeleton .card-skeleton-copy {
+  position: absolute;
+  right: 16px;
+  bottom: 24px;
+  left: 16px;
+}
+.profile-skeleton .card-skeleton {
+  min-height: 260px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-visual.media-loading,
+  .meme-media > img.media-loading,
+  .meme-media > video.media-loading {
+    animation: none;
+  }
 }
 .session-loading,
 .session-error {
@@ -445,6 +547,13 @@ button {
   padding: 16px;
   border-left: 3px solid var(--accent);
   background: var(--surface);
+  border-radius: 0 12px 12px 0;
+}
+.safety-confirmation {
+  padding: 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--canvas);
+  color: var(--ink);
   border-radius: 0 12px 12px 0;
 }
 .notice p {
@@ -699,6 +808,14 @@ label > .label-note {
   background: var(--surface);
   color: var(--ink);
 }
+.location-action {
+  display: grid;
+  gap: 8px;
+  padding-inline: 4px;
+}
+.location-action .button {
+  width: 100%;
+}
 .profile-form:focus {
   outline: none;
 }
@@ -922,7 +1039,7 @@ label > .label-note {
   overflow: hidden;
   border: 1px solid var(--divider);
   border-radius: 16px;
-  background: #eae6de;
+  background: var(--surface);
 }
 .meme-media > img,
 .meme-media > video {
@@ -1083,7 +1200,7 @@ label > .label-note {
 }
 .taste-track {
   height: 12px;
-  background: #e8e4dc;
+  background: var(--surface);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -1133,7 +1250,7 @@ label > .label-note {
 }
 .candidate-photo {
   aspect-ratio: 1.15;
-  background: #e8e4dc;
+  background: var(--surface);
   overflow: hidden;
 }
 .candidate-photo img {
@@ -1289,7 +1406,7 @@ label > .label-note {
   aspect-ratio: 4 / 5;
   object-fit: cover;
   border-radius: 14px;
-  background: #e8e4dc;
+  background: var(--surface);
 }
 .profile-visual {
   display: grid;
@@ -2341,6 +2458,9 @@ label > .label-note {
 .discover-heading p {
   color: #ffffffb8;
   font-size: 14px;
+}
+.discover-distance {
+  margin-top: 2px;
 }
 
 

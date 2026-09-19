@@ -11,6 +11,7 @@ import {
 import type { FeedComment, Meme, Reaction } from "@/lib/contracts";
 import {
   api,
+  CardSkeleton,
   Dialog,
   Empty,
   ErrorNote,
@@ -432,7 +433,7 @@ export function SavedScreen({
       <SectionTitle title="Saved posts" />
       <ErrorNote error={error} />
       {!saved && !error ? (
-        <Loading rows={3} />
+        <CardSkeleton count={3} />
       ) : saved?.length ? (
         <div className="saved-post-list">
           {saved.map((post) => (

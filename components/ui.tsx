@@ -70,6 +70,33 @@ export function Loading({ rows = 3 }: { rows?: number }) {
     </div>
   );
 }
+export function CardSkeleton({
+  count = 3,
+  className = "",
+}: {
+  count?: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`card-skeleton-list ${className}`}
+      role="status"
+      aria-label="Loading"
+    >
+      {Array.from({ length: count }, (_, index) => (
+        <article className="card-skeleton" key={index} aria-hidden>
+          <div className="skeleton card-skeleton-media" />
+          <div className="card-skeleton-copy">
+            <div className="skeleton card-skeleton-line wide" />
+            <div className="skeleton card-skeleton-line" />
+            <div className="skeleton card-skeleton-line short" />
+          </div>
+        </article>
+      ))}
+      <span className="sr-only">Loading</span>
+    </div>
+  );
+}
 export function Empty({
   title,
   children,
@@ -112,14 +139,18 @@ export function ProfileVisual({
 }) {
   const accessibleLabel = label ?? `${name}'s profile`;
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
   const temporary = !src || src.startsWith("/demo/");
   useEffect(() => {
     setFailed(false);
+    setLoaded(false);
     if (temporary || !src) return;
     const timer = setTimeout(() => {
       const image = imageRef.current;
-      if (image?.complete && image.naturalWidth === 0) setFailed(true);
+      if (!image?.complete) return;
+      if (image.naturalWidth === 0) setFailed(true);
+      else setLoaded(true);
     }, 100);
     return () => clearTimeout(timer);
   }, [src, temporary]);
@@ -132,10 +163,11 @@ export function ProfileVisual({
     </span>
   ) : (
     <img
-      className={`profile-visual ${className}`}
+      className={`profile-visual ${className} ${loaded ? "media-loaded" : "media-loading"}`}
       ref={imageRef}
       src={src}
       alt={accessibleLabel}
+      onLoad={() => setLoaded(true)}
       onError={() => setFailed(true)}
     />
   );
@@ -258,6 +290,7 @@ export function MemeMedia({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [pausedByUser, setPausedByUser] = useState(false);
@@ -274,6 +307,7 @@ export function MemeMedia({
   const isVideo = localMeme.type === "video";
   useEffect(() => {
     setFailed(false);
+    setLoaded(false);
     setMuted(true);
     setPausedByUser(false);
     setPlayError(null);
@@ -337,6 +371,7 @@ export function MemeMedia({
       ) : video ? (
         <>
           <video
+            className={loaded ? "media-loaded" : "media-loading"}
             key={meme.id}
             ref={videoRef}
             src={localMeme.src}
@@ -345,6 +380,7 @@ export function MemeMedia({
             loop
             playsInline
             preload="metadata"
+            onLoadedData={() => setLoaded(true)}
             onError={() => setFailed(true)}
             onPlay={() => {
               setPlaying(true);
@@ -398,8 +434,10 @@ export function MemeMedia({
         </>
       ) : (
         <img
-          src={isVideo ? localMeme.poster || "/fallback.svg" : localMeme.src}
-          alt={localMeme.caption}
+className={loaded ? "media-loaded" : "media-loading"}
+src={isVideo ? localMeme.poster || "/fallback.svg" : localMeme.src}
+alt={localMeme.caption}
+onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
         />
       )}

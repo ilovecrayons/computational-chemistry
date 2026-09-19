@@ -12,8 +12,6 @@ import {
   ArrowLeft,
   ArrowRight,
   DotsThree,
-  Egg,
-  EggCrack,
   Heart,
   PaperPlaneTilt,
   ShareNetwork,
@@ -28,6 +26,7 @@ import type {
 } from "@/lib/contracts";
 import {
   api,
+  CardSkeleton,
   Dialog,
   Empty,
   ErrorNote,
@@ -42,6 +41,13 @@ import { useSwipe } from "./use-swipe";
 function pause(ms: number) {
   return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 }
+function distanceLabel(distanceMiles: number | null): string {
+  if (distanceMiles === null) return "Distance unavailable";
+  const miles = Math.max(10, Math.ceil(distanceMiles / 10) * 10);
+  return miles >= 100 ? "Within 100+ miles" : `Within ${miles} miles`;
+}
+
+const candidateCache = new Map<string, Candidate[]>();
 
 function Evidence({ compatibility }: { compatibility: Compatibility }) {
   return (
@@ -56,6 +62,7 @@ function Evidence({ compatibility }: { compatibility: Compatibility }) {
     </div>
   );
 }
+type SafetyAction = "block" | "report" | "unmatch";
 export function Safety({
   targetId,
   targetName = "this person",
@@ -64,28 +71,42 @@ export function Safety({
 }: {
   targetId: string;
   targetName?: string;
-  onDone: () => void;
+  onDone?: (action: SafetyAction) => void;
   allowUnmatch?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [action, setAction] = useState<"block" | "report" | "unmatch" | null>(
-    null,
-  );
+  const [action, setAction] = useState<SafetyAction | null>(null);
+  const [confirmation, setConfirmation] = useState<SafetyAction | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  function close() {
+    const completedAction = confirmation;
+    setOpen(false);
+    setAction(null);
+    setConfirmation(null);
+    setReason("");
+    setError(null);
+    if (completedAction) onDone?.(completedAction);
+  }
+  function chooseAction(next: SafetyAction) {
+    setError(null);
+    setAction(next);
+  }
   async function submit() {
+    if (!action) return;
+    const completedAction = action;
     setBusy(true);
     setError(null);
     try {
       await api("/api/safety", {
         targetId,
-        action,
-        ...(action === "report" ? { reason } : {}),
+        action: completedAction,
+        ...(completedAction === "report" ? { reason } : {}),
       });
-      setOpen(false);
       setAction(null);
-      onDone();
+      setReason("");
+      setConfirmation(completedAction);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -117,23 +138,39 @@ export function Safety({
       <button
         className="icon-button"
         aria-label="Profile options"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setError(null);
+          setConfirmation(null);
+          setOpen(true);
+        }}
       >
         <DotsThree size={28} weight="bold" />
       </button>
       {open && (
         <Dialog
           title={
-            action
-              ? `${action[0].toUpperCase()}${action.slice(1)} this person?`
-              : "Profile options"
+            confirmation
+              ? "Confirmation"
+              : action
+                ? `${action[0].toUpperCase()}${action.slice(1)} this person?`
+                : "Profile options"
           }
-          onClose={() => {
-            setOpen(false);
-            setAction(null);
-          }}
+          onClose={close}
         >
-          {!action ? (
+          {confirmation ? (
+            <div className="stack">
+              <p className="safety-confirmation" role="status">
+                {confirmation === "report"
+                  ? "Report submitted. Thanks for helping keep the community safe."
+                  : confirmation === "block"
+                    ? `${targetName} was blocked.`
+                    : "This match was ended."}
+              </p>
+              <button className="button primary" onClick={close}>
+                Done
+              </button>
+            </div>
+          ) : !action ? (
             <div className="stack">
               <button className="button secondary" onClick={shareProfile}>
                 <ShareNetwork size={20} />
@@ -142,20 +179,20 @@ export function Safety({
               {allowUnmatch && (
                 <button
                   className="button secondary"
-                  onClick={() => setAction("unmatch")}
+                  onClick={() => chooseAction("unmatch")}
                 >
                   Unmatch
                 </button>
               )}
               <button
                 className="button secondary"
-                onClick={() => setAction("block")}
+                onClick={() => chooseAction("block")}
               >
                 Block person
               </button>
               <button
                 className="button secondary"
-                onClick={() => setAction("report")}
+                onClick={() => chooseAction("report")}
               >
                 Report concern
               </button>
@@ -192,10 +229,7 @@ export function Safety({
               >
                 {busy ? "Saving…" : `Confirm ${action}`}
               </button>
-              <button
-                className="button secondary"
-                onClick={() => setAction(null)}
-              >
+              <button className="button secondary" onClick={() => setAction(null)}>
                 Go back
               </button>
             </div>
@@ -219,14 +253,15 @@ export function DiscoverScreen({
   onProfile: () => void;
   onViewProfile: (profileId: string) => void;
 }) {
-  const [candidates, setCandidates] = useState<Candidate[] | null>(null);
+  const [candidates, setCandidates] = useState<Candidate[] | null>(
+    () => candidateCache.get(me.user.id) ?? null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [matched, setMatched] = useState<Match | null>(null);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(true);
   const [outgoing, setOutgoing] = useState<"left" | "right" | null>(null);
-  const [eggPhase, setEggPhase] = useState<"cracking" | "whole" | null>(null);
   const suppressPhotoTapUntil = useRef(0);
   const reduced = useReducedMotion();
   const load = useCallback(() => {
@@ -234,16 +269,18 @@ export function DiscoverScreen({
     api<{ candidates: Candidate[] }>("/api/candidates")
       .then(async (data) => {
         if (data.candidates.length > 0) {
+          candidateCache.set(me.user.id, data.candidates);
           setCandidates(data.candidates);
           return;
         }
         const browse = await api<{ candidates: Candidate[] }>(
           "/api/candidates?browse=1",
         );
+        candidateCache.set(me.user.id, browse.candidates);
         setCandidates(browse.candidates);
       })
       .catch((e) => setError(e.message));
-  }, []);
+  }, [me.user.id]);
   useEffect(load, [load]);
   async function decide(targetId: string, decision: "pass" | "like") {
     if (busy) return;
@@ -255,26 +292,20 @@ export function DiscoverScreen({
     );
     void response.catch(() => undefined);
     try {
-      if (decision === "like") {
-        setEggPhase("cracking");
-        await pause(360);
-        setEggPhase("whole");
-        await pause(520);
-        setOutgoing("right");
-        await pause(420);
-      } else {
-        setOutgoing("left");
-        await pause(420);
-      }
+      setOutgoing(decision === "like" ? "right" : "left");
+      await pause(420);
       const data = await response;
-      setCandidates((previous) => previous!.filter((c) => c.id !== targetId));
+      setCandidates((previous) => {
+        const next = previous?.filter((c) => c.id !== targetId) ?? [];
+        candidateCache.set(me.user.id, next);
+        return next;
+      });
       setPhotoIndex(0);
       if (data.match) setMatched(data.match);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setOutgoing(null);
-      setEggPhase(null);
       setBusy(false);
     }
   }
@@ -319,7 +350,7 @@ export function DiscoverScreen({
       )}
 
       {!candidates && !error ? (
-        <Loading />
+        <CardSkeleton count={1} className="discover-skeleton" />
       ) : candidate ? (
         <>
           <div className="tiktok-stage discover-stage" {...swipe}>
@@ -397,11 +428,24 @@ export function DiscoverScreen({
                         ? `, ${candidate.state}`
                         : ""}
                   </p>
+                  <p className="discover-distance">
+                    {distanceLabel(candidate.distanceMiles)}
+                  </p>
                 </div>
                 <Safety
                   targetId={candidate.id}
                   targetName={candidate.name}
-                  onDone={load}
+                  onDone={(completedAction) => {
+                    if (completedAction === "block") {
+                      setCandidates((previous) => {
+                        const next =
+                          previous?.filter((item) => item.id !== candidate.id) ??
+                          [];
+                        candidateCache.set(me.user.id, next);
+                        return next;
+                      });
+                    }
+                  }}
                 />
               </div>
               {candidate.bio && <p className="discover-bio">{candidate.bio}</p>}
@@ -409,29 +453,6 @@ export function DiscoverScreen({
             </div>
               )}
             </div>
-            <AnimatePresence>
-              {eggPhase && (
-                <motion.div
-                  key={eggPhase}
-                  className="match-egg-animation"
-                  initial={{ opacity: 0, scale: 0.7, y: 18 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 1.12, y: -12 }}
-                  transition={{ duration: 0.28 }}
-                >
-                  {eggPhase === "cracking" ? (
-                    <EggCrack size={92} weight="duotone" aria-hidden />
-                  ) : (
-                    <Egg size={92} weight="duotone" aria-hidden />
-                  )}
-                  <p>
-                    {eggPhase === "cracking"
-                      ? "Uncracking the match…"
-                      : "Putting your weird back together…"}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
           <div className="tiktok-dock reaction-dock" aria-busy={busy}>
             <button
@@ -562,7 +583,7 @@ export function ChatsScreen({
         </button>
       )}
       {!matches && !error ? (
-        <Loading />
+        <CardSkeleton count={3} />
       ) : matches?.length ? (
         <div className="match-list">
           {matches.map((match) => (

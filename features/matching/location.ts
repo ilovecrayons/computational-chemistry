@@ -1,3 +1,67 @@
+import { City } from "country-state-city";
+
+type LocationProfile = {
+  town: string;
+  countryCode?: string | null;
+  stateCode?: string | null;
+};
+
+type Coordinates = { latitude: number; longitude: number };
+const cityCache = new Map<string, Map<string, Coordinates>>();
+
+function cityCoordinates(profile: LocationProfile): Coordinates | null {
+  const countryCode = profile.countryCode?.trim();
+  const stateCode = profile.stateCode?.trim();
+  const town = normalizeLocation(profile.town);
+  if (!countryCode || !stateCode || !town) return null;
+  const key = `${countryCode}:${stateCode}`;
+  let cities = cityCache.get(key);
+  if (!cities) {
+    cities = new Map(
+      City.getCitiesOfState(countryCode, stateCode).map((city) => [
+        normalizeLocation(city.name),
+        {
+          latitude: Number(city.latitude),
+          longitude: Number(city.longitude),
+        },
+      ]),
+    );
+    cityCache.set(key, cities);
+  }
+  return cities.get(town) ?? null;
+}
+
+function radians(value: number): number {
+  return (value * Math.PI) / 180;
+}
+
+export function locationDistanceMiles(
+  left: LocationProfile,
+  right: LocationProfile,
+): number | null {
+  const leftCoordinates = cityCoordinates(left);
+  const rightCoordinates = cityCoordinates(right);
+  if (!leftCoordinates || !rightCoordinates) {
+    return normalizeLocation(left.town) === normalizeLocation(right.town)
+      ? 0
+      : null;
+  }
+  const latitudeDelta = radians(
+    rightCoordinates.latitude - leftCoordinates.latitude,
+  );
+  const longitudeDelta = radians(
+    rightCoordinates.longitude - leftCoordinates.longitude,
+  );
+  const a =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(radians(leftCoordinates.latitude)) *
+      Math.cos(radians(rightCoordinates.latitude)) *
+      Math.sin(longitudeDelta / 2) ** 2;
+  return (
+    3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  );
+}
+
 const METRO_BUCKETS: Record<string, readonly string[]> = {
   nyc: [
     "brooklyn",

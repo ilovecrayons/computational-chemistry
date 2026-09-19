@@ -30,7 +30,7 @@ const spaceGrotesk = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Crackd — Find your kind of weird",
+  title: "Crackd - Find your kind of weird",
   description:
     "Judge a few memes. Find someone who laughs at the same garbage. A dating app built around shared humor.",
   robots: { index: false, follow: false },
@@ -40,7 +40,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#F6F4EF",
+  themeColor: "#101114",
 };
 
 export default function RootLayout({

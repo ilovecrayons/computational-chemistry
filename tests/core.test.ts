@@ -237,6 +237,23 @@ test("a fixed overlap dataset ranks the matching taste above a disjoint taste", 
   assert.equal("dob" in candidates[0], false);
 });
 
+test("candidate ranking exposes local distance and prioritizes nearby towns", () => {
+  const farProfile = profile.getMe("far").profile!;
+  profile.saveProfile("far", {
+    ...farProfile,
+    town: "Queens",
+    location: "Queens, NY",
+    matchLocation: "Queens, NY",
+  });
+  const candidates = engine.getCandidates("a");
+  assert.deepEqual(
+    candidates.map((candidate) => candidate.id),
+    ["close", "far"],
+  );
+  assert.equal(candidates[0].distanceMiles, 0);
+  assert.ok((candidates[1].distanceMiles ?? 0) > 0);
+});
+
 test("invented scores rank candidates before calibration and honor the match threshold", () => {
   like("a", "red", 9);
   like("close", "red", 10);

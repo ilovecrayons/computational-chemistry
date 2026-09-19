@@ -3,7 +3,14 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { ArrowRight, Bell, ChatCircle, Heart, UploadSimple } from "@phosphor-icons/react";
 import type { AppNotification, Match } from "@/lib/contracts";
-import { api, ErrorNote, Loading, ProfileVisual, SectionTitle } from "./ui";
+import {
+  api,
+  CardSkeleton,
+  ErrorNote,
+  Loading,
+  ProfileVisual,
+  SectionTitle,
+} from "./ui";
 
 function uploadError(data: unknown) {
   if (data && typeof data === "object" && "error" in data) {
@@ -120,7 +127,7 @@ export function NotificationsScreen({
       <SectionTitle eyebrow="Stay in the loop" title="Notifications." />
       <ErrorNote error={error} />
       {loading ? (
-        <Loading rows={4} />
+        <CardSkeleton count={3} />
       ) : (
         <>
           <section className="notification-group">

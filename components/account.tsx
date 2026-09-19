@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, BookmarkSimple, SignOut } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, BookmarkSimple, MapPin, SignOut } from "@phosphor-icons/react";
 import type {
   Gender,
   Intent,
@@ -16,6 +16,7 @@ import { TONES } from "@/features/memes/taxonomy";
 
 import {
   api,
+  CardSkeleton,
   ErrorNote,
   Loading,
   MemeMedia,
@@ -265,6 +266,10 @@ const genderLabels: Record<Gender, string> = {
   nonbinary: "Nonbinary",
 };
 type LocationOption = { code?: string; name: string };
+type ReverseLocation = Pick<
+  Profile,
+  "town" | "state" | "stateCode" | "country" | "countryCode"
+>;
 
 function initialProfile(me: Me): Profile {
   const signupDob = readSignupDob();
@@ -346,6 +351,7 @@ export function ProfileForm({
   const [countries, setCountries] = useState<LocationOption[]>([]);
   const [states, setStates] = useState<LocationOption[]>([]);
   const [cities, setCities] = useState<LocationOption[]>([]);
+  const [locationBusy, setLocationBusy] = useState(false);
   const section = useRef<HTMLElement>(null);
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setProfile((previous) => ({ ...previous, [key]: value }));
@@ -380,6 +386,57 @@ export function ProfileForm({
       .then(setCities)
       .catch(() => setError("Town presets are unavailable."));
   }, [profile.countryCode, profile.stateCode]);
+  async function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setError("Location access is unavailable. Choose your town manually.");
+      return;
+    }
+    setError(null);
+    setLocationBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const location = await api<ReverseLocation>("/api/locations", {
+            latitude: Math.round(position.coords.latitude * 100) / 100,
+            longitude: Math.round(position.coords.longitude * 100) / 100,
+          });
+          setProfile((previous) => ({
+            ...previous,
+            ...location,
+            matchLocation: [location.town, location.state, location.country]
+              .filter(Boolean)
+              .join(", "),
+          }));
+          setFields((previous) => {
+            const next = { ...previous };
+            delete next.countryCode;
+            delete next.stateCode;
+            delete next.town;
+            return next;
+          });
+        } catch (cause) {
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Could not use your location. Choose your town manually.",
+          );
+        } finally {
+          setLocationBusy(false);
+        }
+      },
+      (cause) => {
+        setError(
+          cause.code === 1
+            ? "Location access was denied. Choose your town manually."
+            : cause.code === 3
+              ? "Finding your location timed out. Try again or choose your town manually."
+              : "Could not find your location. Try again or choose your town manually.",
+        );
+        setLocationBusy(false);
+      },
+      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 },
+    );
+  }
   function validateBasics() {
     const errors: Record<string, string> = {};
     const date = new Date(`${profile.dob}T00:00:00Z`);
@@ -679,6 +736,23 @@ export function ProfileForm({
               </select>
               {fieldError("town")}
             </label>
+            {!editing && (
+              <div className="location-action">
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={busy || locationBusy}
+                  onClick={() => void useCurrentLocation()}
+                >
+                  <MapPin size={20} aria-hidden />
+                  {locationBusy ? "Finding your town…" : "Use my location"}
+                </button>
+                <p className="supporting">
+                  Uses an approximate location to choose a town. Your exact
+                  location is not shown.
+                </p>
+              </div>
+            )}
             <label>
               Bio
               <textarea
@@ -1159,6 +1233,7 @@ export function PublicProfileScreen({
   useEffect(() => {
     setProfile(null);
     setPosts([]);
+    setMatchStatus("idle");
     setError(null);
     api<{ profile: PublicProfile; posts: Meme[] }>(
       `/api/profiles/${encodeURIComponent(profileId)}`,
@@ -1173,30 +1248,35 @@ export function PublicProfileScreen({
   }, [profileId]);
 
   async function matchProfile() {
-    if (!profile || matchStatus === "busy" || matchStatus !== "idle") return;
+    if (!profile || matchStatus === "busy" || matchStatus === "matched") return;
+    const decision = matchStatus === "liked" ? "pass" : "like";
     setMatchStatus("busy");
     setError(null);
     try {
       const result = await api<{ match: unknown }>(
         "/api/profile-decisions",
-        { targetId: profile.id, decision: "like" },
+        { targetId: profile.id, decision },
       );
       if (result.match) {
         setMatchStatus("matched");
         onMatched();
       } else {
-        setMatchStatus("liked");
+        setMatchStatus(decision === "like" ? "liked" : "idle");
       }
     } catch (cause) {
-      setMatchStatus("idle");
-      setError(cause instanceof Error ? cause.message : "Could not send a match.");
+      setMatchStatus(decision === "like" ? "idle" : "liked");
+      setError(cause instanceof Error ? cause.message : "Could not update the match invite.");
     }
   }
 
   return (
     <>
-      <button className="text-button" onClick={onBack}>
-        Back to discover
+      <button
+        className="icon-button"
+        aria-label="Back to discover"
+        onClick={onBack}
+      >
+        <ArrowLeft size={24} aria-hidden />
       </button>
       {error ? (
         <section className="session-error">
@@ -1204,7 +1284,7 @@ export function PublicProfileScreen({
           <ErrorNote error={error} />
         </section>
       ) : !profile ? (
-        <Loading />
+        <CardSkeleton count={1} className="profile-skeleton" />
       ) : (
         <>
           <SectionTitle title={`${profile.name}'s profile`} />
@@ -1242,7 +1322,10 @@ export function PublicProfileScreen({
           </section>
           <button
             className="button primary full profile-match-button"
-            disabled={matchStatus !== "idle"}
+            disabled={matchStatus === "busy" || matchStatus === "matched"}
+            aria-label={
+              matchStatus === "liked" ? "Unsend match invite" : undefined
+            }
             onClick={() => void matchProfile()}
           >
             {matchStatus === "busy"

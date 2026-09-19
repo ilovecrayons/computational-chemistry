@@ -21,7 +21,7 @@ import {
   requireProfile,
   type ProfileRow,
 } from "../profile/profile";
-import { locationWithinRadius } from "./location";
+import { locationDistanceMiles, locationWithinRadius } from "./location";
 import { isReadyMeme, isValidXPost } from "../memes/availability";
 const MIN_SURFACED_MATCH_SCORE = 81;
 
@@ -199,6 +199,21 @@ function matchLocationFor(row: ProfileRow): string {
   return row.matchLocation || row.town || row.location || "";
 }
 
+function withinProfileRadius(
+  left: ProfileRow,
+  right: ProfileRow,
+  radiusMiles: number,
+): boolean {
+  const distance = locationDistanceMiles(left, right);
+  return distance === null
+    ? locationWithinRadius(
+        matchLocationFor(left),
+        matchLocationFor(right),
+        radiusMiles,
+      )
+    : distance <= radiusMiles;
+}
+
 export function mutuallyEligible(a: ProfileRow, b: ProfileRow): boolean {
   if (a.userId === b.userId || !a.complete || !b.complete) return false;
   const aAge = ageOn(a.dob),
@@ -216,8 +231,8 @@ export function mutuallyEligible(a: ProfileRow, b: ProfileRow): boolean {
     bAge <= a.preferences.maxAge &&
     aAge >= b.preferences.minAge &&
     aAge <= b.preferences.maxAge &&
-    locationWithinRadius(aLoc, bLoc, aRadius) &&
-    locationWithinRadius(bLoc, aLoc, bRadius)
+    withinProfileRadius(a, b, aRadius) &&
+    withinProfileRadius(b, a, bRadius)
   );
 }
 export function blockedPair(a: string, b: string): boolean {
@@ -250,26 +265,31 @@ function excludedCandidateIds(userId: string): Set<string> {
 }
 
 function rankCandidates(
-  userId: string,
   rows: ProfileRow[],
-  browseOnly = false,
+  browseOnly: boolean,
+  origin: ProfileRow,
 ): Candidate[] {
   const { tastes, library } = loadTastes();
   return rows
     .map((profile) => ({
       ...publicProfile(profile),
+      distanceMiles: locationDistanceMiles(origin, profile),
       compatibility: compatibility(
-        tastes.get(userId),
+        tastes.get(origin.userId),
         tastes.get(profile.userId),
         library,
       ),
       ...(browseOnly ? { browseOnly: true } : {}),
     }))
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      const distanceA = a.distanceMiles ?? Number.POSITIVE_INFINITY;
+      const distanceB = b.distanceMiles ?? Number.POSITIVE_INFINITY;
+      return (
+        distanceA - distanceB ||
         b.compatibility.score - a.compatibility.score ||
-        a.id.localeCompare(b.id),
-    )
+        a.id.localeCompare(b.id)
+      );
+    })
     .slice(0, 50);
 }
 
@@ -284,7 +304,7 @@ export function getCandidates(userId: string): Candidate[] {
       (profile) =>
         !excluded.has(profile.userId) && mutuallyEligible(me, profile),
     );
-  return rankCandidates(userId, eligible).filter(
+  return rankCandidates(eligible, false, me).filter(
     (candidate) =>
       candidate.compatibility.score >= (me.preferences.minMatchPercent ?? 0),
   );
@@ -298,7 +318,7 @@ export function getBrowseCandidates(userId: string): Candidate[] {
     .from(profiles)
     .all()
     .filter((profile) => !excluded.has(profile.userId) && profile.complete);
-  return rankCandidates(userId, browseable, true).filter(
+  return rankCandidates(browseable, true, me).filter(
     (candidate) =>
       candidate.compatibility.score >= (me.preferences.minMatchPercent ?? 0),
   );
