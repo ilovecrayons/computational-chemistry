@@ -1,0 +1,284 @@
+{
+  "version": 1,
+  "source": {
+    "path": "db/x-post-search-trial/results.json",
+    "searchedAt": "2026-09-19T21:50:19.779Z",
+    "model": "grok-4.6",
+    "selection": "Approved Top result, one post per ranked result, preserving source URL, author, text, and media type."
+  },
+  "posts": [
+    {
+      "category": "political",
+      "url": "https://x.com/GuntherEagleman/status/2051374459940946031",
+      "author": "Gunther Eagleman™",
+      "text": "🚨 BOOM! PRESIDENT TRUMP POSTS THE PERFECT MEME — LEADERS LEAD, COWARDS KNEEL, TRAITORS BOW! \n\nTrump standing tall with the American people.\n\nBiden on his knees.\n\nObama bowing to the Iranian Ayatollah.\n\nNo explanation needed.",
+      "mediaType": "image"
+    },
+    {
+      "category": "political",
+      "url": "https://x.com/PlanetOfMemes/status/2101073000640516204",
+      "author": "Planet Of Memes",
+      "text": "When Trump goes to explore Greenland.",
+      "mediaType": "image"
+    },
+    {
+      "category": "political",
+      "url": "https://x.com/its_MrH3/status/2043110425135665384",
+      "author": "Mr. H",
+      "text": "🚨 IRANIAN ANIMATION JUST WENT NUCLEAR!! 🔥🔥\n\n@ExplosiveMediaa dropped a jaw-dropping LEGO-style music video called \"LIAR\" that’s straight fire and cinematic, watch the brick-by-brick masterpiece roasting Trump in ways you’ve NEVER seen.\n\nWatch the bloodied Trump minifig flatline on a gurney.  \nSee the Grim Reaper tower over a mountain of lies.  \nGolden-haired figure chugging bottles at a crooked poker table stamped “Morally Bankrupt.”  \nCrawling through flaming circus hoops.  \nDrenched under a pouring rain with a soaked MAGA hat while lightning strikes.  \nAnd the final gut punch: his own Iran tweets going up in flames as the beat drops the receipts.\n\nLyrics carved in stone — Epstein files, Illuminati shadows, MJ & Diana connections, ego in the dirt, fake empire exposed. Zero mercy. Pure production heat. Rap that hits like a freight train.\n\nThis isn’t just a video. It’s next-level global animation warfare!! 😮‍💨",
+      "mediaType": "video"
+    },
+    {
+      "category": "italian-brainrot",
+      "url": "https://x.com/AlphaRecdyt/status/1916580041334415565",
+      "author": "@AlphaRecdyt",
+      "text": "The secret of italian brainrot",
+      "mediaType": "image"
+    },
+    {
+      "category": "italian-brainrot",
+      "url": "https://x.com/jswimreal/status/2023241710571024733",
+      "author": "@jswimreal",
+      "text": "italian brainrot if it was good",
+      "mediaType": "image"
+    },
+    {
+      "category": "italian-brainrot",
+      "url": "https://x.com/Fawf_iguess/status/2053638074400231779",
+      "author": "@Fawf_iguess",
+      "text": "quandale dingle at the end of the italian brainrot movie",
+      "mediaType": "video"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/High_solder_tf2/status/1819123259457130565",
+      "author": "@High_solder_tf2",
+      "text": "This skibidi toilet is so cringe and brainrot, the old days where the one Literally what we watched back in the day:",
+      "mediaType": "video"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/onetornado1/status/1767639436781629675",
+      "author": "@onetornado1",
+      "text": "“Skibidi Toilet is brainrot” What we used to watch:",
+      "mediaType": "video"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/YenDemonArts/status/1888738575664955445",
+      "author": "@YenDemonArts",
+      "text": "skibidi toilet, rizz, sigma, phonk, hawk t-",
+      "mediaType": "mixed"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/Toastii_Alt/status/2048247198450876534",
+      "author": "@Toastii_Alt",
+      "text": "is masturbating just larping sex?",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/bourglor/status/2089710784347529707",
+      "author": "@bourglor",
+      "text": "Arab guy fakes speaking english with American Accent / larping larp larps poser poseur faking faker undercover trying to fit in not one of them / reaction video meme stantwt",
+      "mediaType": "video"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/peer_rich/status/2032201409236516951",
+      "author": "@peer_rich",
+      "text": "at this point we are just larping productivity",
+      "mediaType": "mixed"
+    },
+    {
+      "category": "cats",
+      "url": "https://x.com/lolsbox/status/2097790419929039214",
+      "author": "LOLSBOX",
+      "text": "#lolsbox #cat #funny #funnycats #cutecat",
+      "mediaType": "image"
+    },
+    {
+      "category": "cats",
+      "url": "https://x.com/WholesomeMeme/status/2099566435466870787",
+      "author": "WholesomeMemes",
+      "text": "https://t.co/tI1W0nsEzT",
+      "mediaType": "image"
+    },
+    {
+      "category": "cats",
+      "url": "https://x.com/literallymecats/status/2101166535536758970",
+      "author": "LiterallyMeCats",
+      "text": "https://t.co/yiBufX1rAz",
+      "mediaType": "image"
+    },
+    {
+      "category": "doomscrolling",
+      "url": "https://x.com/AkemurasBlade/status/2098616677722157483",
+      "author": "@AkemurasBlade",
+      "text": "just went on twt to jerk off but ended up doomscrolling instead",
+      "mediaType": "image"
+    },
+    {
+      "category": "doomscrolling",
+      "url": "https://x.com/afcwazzziee/status/2099496712511615111",
+      "author": "@afcwazzziee",
+      "text": "Deactivated instagram only to doomscroll on Twitter",
+      "mediaType": "video"
+    },
+    {
+      "category": "doomscrolling",
+      "url": "https://x.com/yyxyunah/status/2101042519169462469",
+      "author": "@yyxyunah",
+      "text": "doomscrolling so i can procrastinate reading fanfiction and watching youtube",
+      "mediaType": "video"
+    },
+    {
+      "category": "corporate-core",
+      "url": "https://x.com/icanvardar/status/1983940641680719980",
+      "author": "Can Vardar (@icanvardar)",
+      "text": "finally, linkedin is funny",
+      "mediaType": "image"
+    },
+    {
+      "category": "corporate-core",
+      "url": "https://x.com/consultingcmdy/status/1881549708013060381",
+      "author": "Consulting Comedy (@consultingcmdy)",
+      "text": "Trump signs executive order banning the use of “circle back” and “bandwidth” in the corporate environment",
+      "mediaType": "image"
+    },
+    {
+      "category": "corporate-core",
+      "url": "https://x.com/iamTannenbaum/status/1213310474403622912",
+      "author": "Michael Tannenbaum (@iamTannenbaum)",
+      "text": "that meme with the cat but The Office",
+      "mediaType": "image"
+    },
+    {
+      "category": "corecore",
+      "url": "https://x.com/noampomsky/status/1627568716794986496",
+      "author": "Ava (@noampomsky)",
+      "text": "this is good corecore",
+      "mediaType": "video"
+    },
+    {
+      "category": "corecore",
+      "url": "https://x.com/bourglor/status/2068312799986507843",
+      "author": "himejofries (@bourglor)",
+      "text": "Anti AI hopecore tiktok ctiermorme nichecore corecore happy loboestepario datamosh nothing more than a biological android edit reaction video meme",
+      "mediaType": "video"
+    },
+    {
+      "category": "corecore",
+      "url": "https://x.com/BlanketSleepy/status/1870840733462372516",
+      "author": "SleepyBlanket (@BlanketSleepy)",
+      "text": "PURPLED DRUNK CORECORE!!!!",
+      "mediaType": "video"
+    },
+    {
+      "category": "rage-bait",
+      "url": "https://x.com/InternetH0F/status/1899203726524518803",
+      "author": "@InternetH0F",
+      "text": "Kid has mastered rage bait 😂",
+      "mediaType": "video"
+    },
+    {
+      "category": "rage-bait",
+      "url": "https://x.com/eveoart/status/2101123243172118926",
+      "author": "@eveoart",
+      "text": "I made a rage bait bumper magnet",
+      "mediaType": "video"
+    },
+    {
+      "category": "rage-bait",
+      "url": "https://x.com/bwloody/status/2022237418846556539",
+      "author": "@bwloody",
+      "text": "i heard i only need to pull this move to rage bait you",
+      "mediaType": "image"
+    },
+    {
+      "category": "sigma-grindset",
+      "url": "https://x.com/hankgreen/status/1812145536247747006",
+      "author": "Hank Green",
+      "text": "There is sigma rizz in this view of life, with its skibidi grindset, having been originally yapped into a few gyatts or into one; and that, whilst this ohio has gone mewwing on according to the quirked up law of gravity, from so sussy a beginning alpha forms most skibidi and most poggers have been, and are being, evolved.\n\n — Charles Gigachad Darwin",
+      "mediaType": "text"
+    },
+    {
+      "category": "sigma-grindset",
+      "url": "https://x.com/KUROIRL/status/1780505200912163236",
+      "author": "KURO ALT",
+      "text": "im a skibidi toilet with the grimace shake in ohio with maximum sigma male gigachad big chungus doing the goofy ahh griddy with my garten of banban rizz while Monday left me broken when i was playing pizza tower Friday night fukin epic roblox moment skibidi bop bop bop yes yes while screaming as pizza tower charachters cause im gonna sauce you up nuh uh, im a skibidi toilet maximum ohio rizz with the sauce rizz you up l + ratio epic gamer number lore bussin sigma male skibidi bop bop mr beeeaast lightskin scare grimace shake pizza tower screaming boykisser furry slayer moment gamer!!!!!!! oh my among us!😂 you just activated my ultimate ohio sus Friday night funkin oklahoma powers epicly i will lightskin stare at you till you combust into a million memes and i will get my ohio revenge!",
+      "mediaType": "mixed"
+    },
+    {
+      "category": "sigma-grindset",
+      "url": "https://x.com/Rinneluga_Z/status/1584683411104751616",
+      "author": "Akuina",
+      "text": "Funny thing is, Patrick Bateman hates the sigma male meme",
+      "mediaType": "image"
+    },
+    {
+      "category": "medieval",
+      "url": "https://x.com/travsaus/status/1386446665121402880",
+      "author": "travisauce🌦️ - @travsaus",
+      "text": "oh look a castle crashers meme",
+      "mediaType": "image"
+    },
+    {
+      "category": "medieval",
+      "url": "https://x.com/FranLu07/status/2097991839777530132",
+      "author": "Fran - @FranLu07",
+      "text": "Misguided knight, i tried to make a funny looking knight",
+      "mediaType": "image"
+    },
+    {
+      "category": "medieval",
+      "url": "https://x.com/QuintusCurtius/status/1399938430218407936",
+      "author": "QuintusCurtius - @QuintusCurtius",
+      "text": "Chad medieval scientist:  \n\n\"I am passionate to learn the secrets of the Heavenly Spheres, and the laws of chemistry.  I can transmute metals.  Man has soul, and is God's noblest creation.\"\n\nSoy modern scientist:\n\n\"We are just atoms floating in a meaningless void of nothing.\"",
+      "mediaType": "image"
+    },
+    {
+      "category": "niche-jobs",
+      "url": "https://x.com/tekbog/status/1731701332010995916",
+      "author": "@tekbog",
+      "text": "watching a sr software engineer try to explain how to debug something to the nepo hire and he looks like this pointing to the different erros lmao",
+      "mediaType": "image"
+    },
+    {
+      "category": "niche-jobs",
+      "url": "https://x.com/billytex940/status/2100942595631276449",
+      "author": "@billytex940",
+      "text": "This is my head fabricator and welder.. he makes well over 200 k a year and this is how he dressed lmao. I love the oil biz.",
+      "mediaType": "image"
+    },
+    {
+      "category": "niche-jobs",
+      "url": "https://x.com/pourfairelevide/status/1895994779496005742",
+      "author": "@pourfairelevide",
+      "text": "“if you have access to a clay deposit you can make bricks and sell them to construction companies” is hilarious advice for at least 6 different reasons. Always read the replies. That’s where the real posters are.",
+      "mediaType": "image"
+    },
+    {
+      "category": "phonk",
+      "url": "https://x.com/PiraatBlud67/status/2053597740769083656",
+      "author": "@PiraatBlud67",
+      "text": "Me and the sigma phonk bois 🗿🗿",
+      "mediaType": "image"
+    },
+    {
+      "category": "phonk",
+      "url": "https://x.com/geminianapromed/status/2014898876075958427",
+      "author": "@geminianapromed",
+      "text": "dios cuando hace años me creía baitera phonk sigma humor para avanzados estoy llorando",
+      "mediaType": "image"
+    },
+    {
+      "category": "phonk",
+      "url": "https://x.com/iwtdlaltalt/status/1839715886560641123",
+      "author": "@iwtdlaltalt",
+      "text": "LGBT = BAD 💀💀💀💀💀\nPHONK + PACKGOD = SIGMA 🍷🗿",
+      "mediaType": "image"
+    }
+  ]
+}

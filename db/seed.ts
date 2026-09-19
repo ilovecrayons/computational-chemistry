@@ -15,10 +15,9 @@ import {
 } from "./schema";
 import { config } from "../lib/config";
 import { ApiFailure } from "../lib/api";
-import { ensureDemoMedia } from "../lib/media/demo";
 import type { Gender, Intent, Preferences } from "../lib/contracts";
 import { coverageOrder } from "../features/memes/feed";
-import { demoSpecs } from "../features/memes/taxonomy";
+import { seedXPosts } from "./x-post-seeds";
 import { compatibility, loadTastes } from "../features/matching/engine";
 
 export const DEMO_PASSWORD = "Memeant-demo-2026!";
@@ -113,7 +112,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "1999-04-12",
     bio: "Here for a good laugh and someone to split the last fries with.",
-    favorites: ["absurd", "deadpan", "dating"],
+    favorites: ["political", "corporate-core", "rage-bait", "corecore"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -123,7 +122,7 @@ export const demoPersonas = [
     gender: "nonbinary",
     dob: "1998-08-22",
     bio: "My love language is a suspiciously specific meme at 2pm. I make excellent bad playlists.",
-    favorites: ["absurd", "deadpan", "dating"],
+    favorites: ["corecore", "larping", "doomscrolling", "political"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -133,7 +132,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1997-02-03",
     bio: "Tiny dogs, ambitious houseplants, and a camera roll full of deeply unserious things.",
-    favorites: ["wholesome", "pets", "starter pack"],
+    favorites: ["cats", "italian-brainrot", "medieval", "corecore"],
     genders: ["woman"],
     intent: "relationship",
   },
@@ -143,7 +142,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "1996-11-19",
     bio: "Will overthink a joke and underthink a camping trip. Usually carrying snacks.",
-    favorites: ["dark", "gaming", "deep-fried"],
+    favorites: ["sigma-grindset", "phonk", "skibidi-toilet", "corecore"],
     genders: allGenders,
     intent: "figuring-it-out",
   },
@@ -153,7 +152,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1995-06-08",
     bio: "Weekend baker. Weekday spreadsheet enthusiast. Strong opinions about fictional pigeons.",
-    favorites: ["deadpan", "work", "fake screenshot"],
+    favorites: ["corporate-core", "niche-jobs", "cats", "doomscrolling"],
     genders: ["man", "nonbinary"],
     intent: "relationship",
   },
@@ -163,7 +162,7 @@ export const demoPersonas = [
     gender: "nonbinary",
     dob: "2000-01-15",
     bio: "I fix bugs for a living and invent new problems for fun. Ask me about my keyboard.",
-    favorites: ["cursed", "coding", "POV"],
+    favorites: ["niche-jobs", "corecore", "skibidi-toilet", "larping"],
     genders: allGenders,
     intent: "casual",
   },
@@ -173,7 +172,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1998-09-09",
     bio: "Good coffee, terrible puns, and one very photogenic rescue dog. Looking for my picnic person.",
-    favorites: ["wholesome", "pets", "starter pack"],
+    favorites: ["cats", "italian-brainrot", "corecore", "doomscrolling"],
     genders: ["woman", "nonbinary"],
     intent: "relationship",
   },
@@ -183,7 +182,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "1994-03-26",
     bio: "A board game can be a date if we agree not to take the rules personally.",
-    favorites: ["cringe", "gaming", "reaction"],
+    favorites: ["skibidi-toilet", "medieval", "phonk", "rage-bait"],
     genders: ["man", "nonbinary"],
     intent: "figuring-it-out",
   },
@@ -193,7 +192,7 @@ export const demoPersonas = [
     gender: "nonbinary",
     dob: "2001-07-17",
     bio: "Chronically early to gigs. Chronically late to understanding the group chat.",
-    favorites: ["absurd", "food", "deep-fried"],
+    favorites: ["doomscrolling", "rage-bait", "italian-brainrot", "political"],
     genders: ["woman", "man"],
     intent: "casual",
   },
@@ -203,7 +202,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1993-12-04",
     bio: "Museum dates and feral little jokes. I will remember how you take your tea.",
-    favorites: ["dark", "dating", "fake screenshot"],
+    favorites: ["political", "corporate-core", "medieval", "corecore"],
     genders: ["man"],
     intent: "relationship",
   },
@@ -213,7 +212,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1997-05-18",
     bio: "I collect oddly specific playlists and know the best late-night dumplings.",
-    favorites: ["coding", "deadpan", "work"],
+    favorites: ["niche-jobs", "corporate-core", "corecore", "doomscrolling"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -223,7 +222,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "1996-10-27",
     bio: "Equal parts museum wanderer, amateur chef, and professional group-chat lurker.",
-    favorites: ["food", "wholesome", "fake screenshot"],
+    favorites: ["italian-brainrot", "cats", "niche-jobs", "corporate-core"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -233,7 +232,7 @@ export const demoPersonas = [
     gender: "nonbinary",
     dob: "1999-01-30",
     bio: "Here for tiny adventures, big snacks, and jokes that need a footnote.",
-    favorites: ["absurd", "pets", "POV"],
+    favorites: ["larping", "cats", "doomscrolling", "rage-bait"],
     genders: allGenders,
     intent: "casual",
   },
@@ -243,7 +242,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1994-07-11",
     bio: "Will defend a bad pun with the confidence of someone who brought receipts.",
-    favorites: ["cringe", "dating", "reaction"],
+    favorites: ["rage-bait", "political", "larping", "corecore"],
     genders: allGenders,
     intent: "figuring-it-out",
   },
@@ -253,7 +252,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "2000-03-22",
     bio: "A walking snack recommendation with strong opinions about fictional villains.",
-    favorites: ["dark", "gaming", "deep-fried"],
+    favorites: ["sigma-grindset", "phonk", "skibidi-toilet", "rage-bait"],
     genders: allGenders,
     intent: "casual",
   },
@@ -263,7 +262,7 @@ export const demoPersonas = [
     gender: "nonbinary",
     dob: "1998-12-16",
     bio: "I make excellent coffee and questionable decisions about buying houseplants.",
-    favorites: ["wholesome", "pets", "work"],
+    favorites: ["cats", "corporate-core", "doomscrolling", "italian-brainrot"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -273,7 +272,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1995-09-02",
     bio: "Museum dates, chaotic baking projects, and a very serious frog ranking.",
-    favorites: ["food", "cursed", "starter pack"],
+    favorites: ["italian-brainrot", "medieval", "rage-bait", "cats"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -283,7 +282,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "1993-06-24",
     bio: "Quietly competitive at board games. Loudly enthusiastic about breakfast.",
-    favorites: ["gaming", "deep-fried", "reaction"],
+    favorites: ["skibidi-toilet", "phonk", "corecore", "niche-jobs"],
     genders: allGenders,
     intent: "figuring-it-out",
   },
@@ -293,7 +292,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1996-04-28",
     bio: "I know a suspicious number of neighborhood bakeries and exactly three good karaoke songs.",
-    favorites: ["food", "reaction", "work"],
+    favorites: ["corporate-core", "niche-jobs", "cats", "doomscrolling"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -303,7 +302,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "1998-02-14",
     bio: "Film camera hobbyist, reluctant morning person, and dedicated finder of the best fries.",
-    favorites: ["dating", "deadpan", "fake screenshot"],
+    favorites: ["political", "larping", "corecore", "corporate-core"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -313,7 +312,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1992-10-06",
     bio: "I will bring a book to the beach and then spend four hours people-watching instead.",
-    favorites: ["dark", "work", "wholesome"],
+    favorites: ["doomscrolling", "medieval", "corporate-core", "larping"],
     genders: ["man", "nonbinary"],
     intent: "figuring-it-out",
   },
@@ -323,7 +322,7 @@ export const demoPersonas = [
     gender: "nonbinary",
     dob: "1997-08-31",
     bio: "Weekend climber, weekday spreadsheet gremlin, full-time collector of niche references.",
-    favorites: ["gaming", "coding", "POV"],
+    favorites: ["niche-jobs", "sigma-grindset", "phonk", "corporate-core"],
     genders: allGenders,
     intent: "casual",
   },
@@ -333,7 +332,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "1995-01-21",
     bio: "Making a respectable attempt at cooking through one cookbook and failing charmingly.",
-    favorites: ["food", "cursed", "starter pack"],
+    favorites: ["italian-brainrot", "rage-bait", "medieval", "niche-jobs"],
     genders: ["woman", "nonbinary"],
     intent: "relationship",
   },
@@ -343,7 +342,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1999-11-02",
     bio: "Will send you a three-minute voice note about a dog I saw on the train.",
-    favorites: ["pets", "wholesome", "reaction"],
+    favorites: ["cats", "corecore", "doomscrolling", "larping"],
     genders: allGenders,
     intent: "casual",
   },
@@ -353,7 +352,7 @@ export const demoPersonas = [
     gender: "nonbinary",
     dob: "1994-05-16",
     bio: "Museum member, amateur gardener, and undefeated champion of making plans in the group chat.",
-    favorites: ["dating", "pets", "work"],
+    favorites: ["political", "cats", "corporate-core", "corecore"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -363,7 +362,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "1991-09-13",
     bio: "I make excellent pancakes and questionable guesses in pub trivia.",
-    favorites: ["gaming", "food", "cringe"],
+    favorites: ["phonk", "skibidi-toilet", "rage-bait", "niche-jobs"],
     genders: ["woman", "man", "nonbinary"],
     intent: "figuring-it-out",
   },
@@ -373,7 +372,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1998-06-25",
     bio: "Plant parent with a camera roll full of sunsets, snacks, and screenshots I refuse to delete.",
-    favorites: ["wholesome", "fake screenshot", "starter pack"],
+    favorites: ["italian-brainrot", "cats", "corecore", "doomscrolling"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -383,7 +382,7 @@ export const demoPersonas = [
     gender: "nonbinary",
     dob: "1996-12-08",
     bio: "I like long walks, short emails, and jokes that get funnier when you explain them badly.",
-    favorites: ["deadpan", "dark", "reaction"],
+    favorites: ["corporate-core", "political", "larping", "cats"],
     genders: allGenders,
     intent: "casual",
   },
@@ -393,7 +392,7 @@ export const demoPersonas = [
     gender: "man",
     dob: "2000-08-19",
     bio: "Part-time drummer, full-time snack planner. I have strong opinions about movie trailers.",
-    favorites: ["deep-fried", "gaming", "absurd"],
+    favorites: ["phonk", "sigma-grindset", "skibidi-toilet", "rage-bait"],
     genders: ["woman", "nonbinary"],
     intent: "relationship",
   },
@@ -403,7 +402,7 @@ export const demoPersonas = [
     gender: "woman",
     dob: "1993-03-11",
     bio: "Always down for a bookstore date, a tiny road trip, or a very serious ranking of dumplings.",
-    favorites: ["food", "dating", "deadpan"],
+    favorites: ["niche-jobs", "political", "doomscrolling", "corporate-core"],
     genders: allGenders,
     intent: "relationship",
   },
@@ -424,13 +423,16 @@ export async function seedDemo(): Promise<void> {
       "DEMO_DISABLED",
       "Set DEMO_MODE=true to seed fictional demo identities.",
     );
-  await ensureDemoMedia();
+  seedXPosts();
   const password = await hashPassword(DEMO_PASSWORD);
   const ids = demoPersonas.map((person) => person.id);
   const now = new Date("2026-09-01T12:00:00.000Z");
-  const firstFifteen = coverageOrder(db.select().from(memes).all())
-    .filter((meme) => meme.status === "ready" && meme.assetPath)
-    .slice(0, 15);
+  const official = db
+    .select()
+    .from(memes)
+    .all()
+    .filter((meme) => meme.type === "x" && meme.xPost !== null);
+  const firstFifteen = coverageOrder(official).slice(0, 15);
   db.transaction((tx) => {
     // Keep auth sessions and all meme rows/files. Only the fictional personas' state resets.
     tx.delete(matches)
@@ -531,8 +533,10 @@ export async function seedDemo(): Promise<void> {
       const positives =
         person.slug === "jules"
           ? firstFifteen
-          : demoSpecs
-              .filter((meme) => person.favorites.includes(meme.topics[0]))
+          : official
+              .filter((meme) =>
+                person.favorites.some((tag) => tag in meme.tags),
+              )
               .sort(
                 (a, b) =>
                   person.favorites.filter((tag) => tag in b.tags).length -
@@ -542,7 +546,7 @@ export async function seedDemo(): Promise<void> {
       const likedIds = new Set(positives.map((meme) => meme.id));
       const ranking = [
         ...positives,
-        ...demoSpecs.filter((meme) => !likedIds.has(meme.id)),
+        ...official.filter((meme) => !likedIds.has(meme.id)),
       ];
       for (const [index, meme] of ranking.slice(0, 30).entries()) {
         const reaction = likedIds.has(meme.id)

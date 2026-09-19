@@ -18,14 +18,15 @@ import type {
 } from "../../lib/contracts";
 import { memeDTO, type MemeRow } from "../matching/engine";
 import { requireProfile } from "../profile/profile";
+import { isAvailableMeme } from "../memes/availability";
 
-function readyMeme(memeId: string) {
+function readyMeme(memeId: string, viewerId: string): MemeRow {
   const meme = db
     .select()
     .from(memes)
-    .where(and(eq(memes.id, memeId), eq(memes.status, "ready")))
+    .where(eq(memes.id, memeId))
     .get();
-  if (!meme?.assetPath)
+  if (!meme || !isAvailableMeme(meme, viewerId))
     throw new ApiFailure(404, "POST_NOT_FOUND", "This post is unavailable.");
   return meme;
 }
@@ -77,9 +78,14 @@ export function socialMemeDTO(row: MemeRow, viewerId: string): Meme {
   };
 }
 
+export function getPost(userId: string, memeId: string): Meme {
+  requireProfile(userId);
+  return socialMemeDTO(readyMeme(memeId, userId), userId);
+}
+
 export function getComments(userId: string, memeId: string): FeedComment[] {
   requireProfile(userId);
-  readyMeme(memeId);
+  readyMeme(memeId, userId);
   return db
     .select()
     .from(postComments)
@@ -111,7 +117,7 @@ export const commentInput = z.object({
 export function addComment(userId: string, memeId: string, input: unknown) {
   requireProfile(userId);
   const value = commentInput.parse(input);
-  const meme = readyMeme(memeId);
+  const meme = readyMeme(memeId, userId);
   const row = {
     id: randomUUID(),
     memeId,
@@ -153,7 +159,7 @@ export function addComment(userId: string, memeId: string, input: unknown) {
 
 export function toggleSave(userId: string, memeId: string) {
   requireProfile(userId);
-  readyMeme(memeId);
+  readyMeme(memeId, userId);
   const existing = db
     .select()
     .from(savedMemes)
@@ -181,13 +187,11 @@ export function getSavedMemes(userId: string): Meme[] {
     .select({ meme: memes })
     .from(savedMemes)
     .innerJoin(memes, eq(savedMemes.memeId, memes.id))
-    .where(
-      and(eq(savedMemes.userId, userId), eq(memes.status, "ready")),
-    )
+    .where(eq(savedMemes.userId, userId))
     .orderBy(desc(savedMemes.createdAt))
     .limit(100)
     .all()
-    .filter(({ meme }) => !!meme.assetPath)
+    .filter(({ meme }) => isAvailableMeme(meme, userId))
     .map(({ meme }) => socialMemeDTO(meme, userId));
 }
 
@@ -196,16 +200,11 @@ export function getUserPosts(userId: string, viewerId = userId): Meme[] {
   return db
     .select()
     .from(memes)
-    .where(
-      and(
-        eq(memes.requestedBy, userId),
-        eq(memes.status, "ready"),
-      ),
-    )
+    .where(eq(memes.requestedBy, userId))
     .orderBy(desc(memes.createdAt), desc(memes.id))
     .limit(60)
     .all()
-    .filter((meme) => !!meme.assetPath)
+    .filter((meme) => isAvailableMeme(meme, viewerId))
     .map((meme) => socialMemeDTO(meme, viewerId));
 }
 

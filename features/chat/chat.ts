@@ -5,6 +5,7 @@ import { db } from "../../db";
 import { memes, messages, notifications, reactions } from "../../db/schema";
 import { ApiFailure } from "../../lib/api";
 import type { ChatMessage } from "../../lib/contracts";
+import { isAvailableMeme } from "../memes/availability";
 import { authorizedMatch, matchDTO } from "../matches/matches";
 
 const cursorInput = z.object({
@@ -93,7 +94,7 @@ export function sendMessage(
       const meme = tx
         .select()
         .from(memes)
-        .where(and(eq(memes.id, value.memeId), eq(memes.status, "ready")))
+        .where(eq(memes.id, value.memeId))
         .get();
       const positive = tx
         .select()
@@ -112,7 +113,12 @@ export function sendMessage(
           ),
         )
         .all();
-      if (!meme?.assetPath || positive.length !== 2)
+      if (
+        !meme ||
+        !isAvailableMeme(meme, match.userA) ||
+        !isAvailableMeme(meme, match.userB) ||
+        positive.length !== 2
+      )
         throw new ApiFailure(
           403,
           "MEME_NOT_SHARED",

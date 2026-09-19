@@ -32,7 +32,12 @@ type View =
   | "me"
   | "saved"
   | "admin";
-type Route = { view: View; chat: string | null; profile: string | null };
+type Route = {
+  view: View;
+  chat: string | null;
+  profile: string | null;
+  postId: string | null;
+};
 const views: View[] = [
   "memes",
   "matches",
@@ -60,10 +65,12 @@ function readRoute(): Route {
   const view = query.get("view") as View | null;
   const chat = query.get("chat");
   const profile = query.get("profile");
+  const postId = query.get("post");
   return {
     view: chat ? "chats" : view && views.includes(view) ? view : "memes",
     chat: chat || null,
     profile: view === "matches" && profile ? profile : null,
+    postId: view === "memes" || !view ? postId || null : null,
   };
 }
 
@@ -75,6 +82,7 @@ export default function Application() {
     view: "memes",
     chat: null,
     profile: null,
+    postId: null,
   });
   const request = useRef(0);
   const content = useRef<HTMLElement>(null);
@@ -119,6 +127,7 @@ export default function Application() {
       chat: string | null = null,
       replace = false,
       profile: string | null = null,
+      postId: string | null = null,
     ) => {
       const url = new URL(window.location.href);
       url.searchParams.set("view", view);
@@ -126,10 +135,12 @@ export default function Application() {
       else url.searchParams.delete("chat");
       if (profile) url.searchParams.set("profile", profile);
       else url.searchParams.delete("profile");
+      if (postId) url.searchParams.set("post", postId);
+      else url.searchParams.delete("post");
       if (replace) window.history.replaceState(null, "", url);
       else if (url.href !== window.location.href)
         window.history.pushState(null, "", url);
-      setRoute({ view, chat, profile });
+      setRoute({ view, chat, profile, postId });
     },
     [],
   );
@@ -141,6 +152,7 @@ export default function Application() {
     route.view,
     route.chat,
     route.profile,
+    route.postId,
     me?.user.id,
     me?.profile?.complete,
   ]);
@@ -283,6 +295,7 @@ export default function Application() {
             />
           ) : (
             <FeedScreen
+              postId={route.postId ?? undefined}
               onViewProfile={(id) => navigate("matches", null, false, id)}
             />
           )}

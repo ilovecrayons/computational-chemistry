@@ -14,6 +14,7 @@ import type {
   Meme,
   Tasteprint,
 } from "../../lib/contracts";
+import { ApiFailure } from "../../lib/api";
 import { ageOn } from "../profile/age";
 import {
   publicProfile,
@@ -21,10 +22,25 @@ import {
   type ProfileRow,
 } from "../profile/profile";
 import { locationWithinRadius } from "./location";
+import { isReadyMeme, isValidXPost } from "../memes/availability";
 const MIN_SURFACED_MATCH_SCORE = 81;
 
 export type MemeRow = typeof memes.$inferSelect;
 export function memeDTO(row: MemeRow): Meme {
+  if (!isReadyMeme(row))
+    throw new ApiFailure(404, "POST_NOT_FOUND", "This post is unavailable.");
+  if (row.type === "x") {
+    if (!isValidXPost(row.xPost))
+      throw new ApiFailure(404, "POST_NOT_FOUND", "This post is unavailable.");
+    return {
+      id: row.id,
+      type: "x",
+      src: null,
+      poster: null,
+      xPost: row.xPost,
+      caption: row.caption,
+    };
+  }
   return {
     id: row.id,
     type: row.type,
@@ -137,7 +153,7 @@ export function compatibility(
     .filter((id) => b?.liked.has(id))
     .sort()
     .map((id) => library.get(id))
-    .filter((meme): meme is MemeRow => !!meme && meme.status === "ready")
+    .filter((meme): meme is MemeRow => !!meme && isReadyMeme(meme))
     .slice(0, 2)
     .map(memeDTO);
   const rawScore = calibrated
