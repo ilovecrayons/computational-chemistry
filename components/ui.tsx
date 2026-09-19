@@ -11,6 +11,7 @@ import {
   SpeakerSlash,
 } from "@phosphor-icons/react";
 import type { ApiError, Meme } from "@/lib/contracts";
+import { getXPost, XEmbed } from "./x-embed";
 
 export class RequestError extends Error {
   constructor(
@@ -280,10 +281,12 @@ export function MemeMedia({
   meme,
   compact = false,
   fill = false,
+  active = true,
 }: {
   meme: Meme;
   compact?: boolean;
   fill?: boolean;
+  active?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
@@ -292,6 +295,16 @@ export function MemeMedia({
   const [playing, setPlaying] = useState(false);
   const [pausedByUser, setPausedByUser] = useState(false);
   const [playError, setPlayError] = useState<string | null>(null);
+  const xPost = getXPost(meme);
+  const external = String(meme.type) === "x";
+  const localMeme = meme as unknown as {
+    id: string;
+    type: "image" | "video";
+    src: string;
+    poster: string | null;
+    caption: string;
+  };
+  const isVideo = localMeme.type === "video";
   useEffect(() => {
     setFailed(false);
     setLoaded(false);
@@ -301,7 +314,7 @@ export function MemeMedia({
   }, [meme.id]);
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || compact) return;
+    if (!video || compact || !active || xPost) return;
     let visible = false;
     const update = () => {
       if (visible && !document.hidden && !pausedByUser)
@@ -322,8 +335,27 @@ export function MemeMedia({
       document.removeEventListener("visibilitychange", update);
       video.pause();
     };
-  }, [meme.id, compact, failed, pausedByUser]);
-  const video = meme.type === "video" && !compact && !failed;
+  }, [active, compact, failed, pausedByUser, xPost?.id]);
+  const video = isVideo && !compact && active && !failed;
+  if (xPost) {
+    return (
+      <div className={`meme-media ${compact ? "compact" : ""} ${fill ? "fill" : ""} x-media`}>
+        <XEmbed post={xPost} caption={meme.caption} compact={compact} active={active} />
+      </div>
+    );
+  }
+  if (external) {
+    return (
+      <div className={`meme-media ${compact ? "compact" : ""} ${fill ? "fill" : ""} x-media`}>
+        <div className="x-embed x-embed-compact">
+          <div className="x-embed-fallback">
+            <p>{meme.caption || "This original X post is unavailable."}</p>
+            <p className="x-embed-status">The original post metadata is unavailable.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       className={`meme-media ${compact ? "compact" : ""} ${fill ? "fill" : ""} ${video ? "video-media" : ""}`}
@@ -342,8 +374,8 @@ export function MemeMedia({
             className={loaded ? "media-loaded" : "media-loading"}
             key={meme.id}
             ref={videoRef}
-            src={meme.src}
-            poster={meme.poster || "/fallback.svg"}
+            src={localMeme.src}
+            poster={localMeme.poster || "/fallback.svg"}
             muted={muted}
             loop
             playsInline
@@ -402,14 +434,10 @@ export function MemeMedia({
         </>
       ) : (
         <img
-          className={loaded ? "media-loaded" : "media-loading"}
-          src={
-            compact && meme.type === "video"
-              ? meme.poster || "/fallback.svg"
-              : meme.src
-          }
-          alt={meme.caption}
-          onLoad={() => setLoaded(true)}
+className={loaded ? "media-loaded" : "media-loading"}
+src={isVideo ? localMeme.poster || "/fallback.svg" : localMeme.src}
+alt={localMeme.caption}
+onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
         />
       )}

@@ -59,17 +59,37 @@ export interface Me {
   demoMode: boolean;
 }
 
-export interface Meme {
+export interface XPost {
   id: string;
-  type: "image" | "video";
-  src: string;
-  poster: string | null;
+  url: string;
+  author: string;
+  mediaType: "image" | "video" | "mixed" | "text" | "unknown";
+}
+
+interface MemeFields {
+  id: string;
   caption: string;
   author?: { id: string; name: string } | null;
   likeCount?: number;
   commentCount?: number;
   saved?: boolean;
 }
+
+export type Meme = MemeFields &
+  (
+    | {
+        type: "image" | "video";
+        src: string;
+        poster: string | null;
+        xPost?: never;
+      }
+    | {
+        type: "x";
+        src: null;
+        poster: null;
+        xPost: XPost;
+      }
+  );
 
 export interface Tasteprint {
   reactionCount: number;

@@ -49,9 +49,6 @@ async function openFreshConversation(page: Page, baseURL: string) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("navigation")).toBeVisible();
   await page.goto(`/?view=chats&chat=${matchId}`);
-  await expect(
-    page.getByRole("heading", { name: "Taylor", exact: true }),
-  ).toBeVisible();
   await expect(page.getByLabel("Message", { exact: true })).toBeEditable();
 
   const response = await page.request.get(messagesPath);

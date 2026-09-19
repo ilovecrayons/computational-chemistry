@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
   ArrowRight,
   BookmarkSimple,
@@ -10,7 +9,6 @@ import {
   ShareNetwork,
 } from "@phosphor-icons/react";
 import type { FeedComment, Meme, Reaction } from "@/lib/contracts";
-import { useSwipe } from "./use-swipe";
 import {
   api,
   CardSkeleton,
@@ -22,263 +20,372 @@ import {
   SectionTitle,
 } from "./ui";
 
+type OpenComments = { postId: string; items: FeedComment[] };
+
+type CardRef = (element: HTMLElement | null) => void;
+
 export function FeedScreen({
   onViewProfile,
+  postId,
 }: {
   onViewProfile: (profileId: string) => void;
+  postId?: string;
 }) {
   const [memes, setMemes] = useState<Meme[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
+  const [reactedIds, setReactedIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
-  const [comments, setComments] = useState<FeedComment[] | null>(null);
+  const [comments, setComments] = useState<OpenComments | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commentsBusy, setCommentsBusy] = useState(false);
-  const reduced = useReducedMotion();
-  const load = useCallback(async (next?: string | null) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api<{ memes: Meme[]; nextCursor: string | null }>(
-        next ? `/api/feed?cursor=${encodeURIComponent(next)}` : "/api/feed",
-      );
-      setMemes((previous) =>
-        next ? [...previous, ...data.memes] : data.memes,
-      );
-      setCursor(data.nextCursor);
-    } catch (e) {
-      setError((e as Error).message);
-      if (!next) setMemes([]);
-    } finally {
-      setLoading(false);
-    }
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef(new Map<string, HTMLElement>());
+  const loadGeneration = useRef(0);
+  const cursorRequest = useRef<{ generation: number; cursor: string } | null>(null);
+
+  const scrollToCard = useCallback((id: string, behavior: ScrollBehavior = "smooth") => {
+    cardRefs.current.get(id)?.scrollIntoView({ behavior, block: "start" });
   }, []);
+
+  const load = useCallback(
+    async (next?: string | null, generation = loadGeneration.current) => {
+      if (generation !== loadGeneration.current) return;
+      if (next) {
+        const request = cursorRequest.current;
+        if (request?.generation === generation && request.cursor === next) return;
+        cursorRequest.current = { generation, cursor: next };
+      }
+      setLoading(true);
+      setError(null);
+      let directError: string | null = null;
+      let direct: Meme | null = null;
+      if (!next && postId) {
+        try {
+          direct = (await api<{ meme: Meme }>(`/api/posts/${encodeURIComponent(postId)}`)).meme;
+        } catch (cause) {
+          if (generation !== loadGeneration.current) return;
+          directError = cause instanceof Error
+            ? `That shared post is unavailable. Showing your feed instead. ${cause.message}`
+            : "That shared post is unavailable. Showing your feed instead.";
+        }
+      }
+      if (generation !== loadGeneration.current) return;
+      try {
+        const data = await api<{ memes: Meme[]; nextCursor: string | null }>(
+          next ? `/api/feed?cursor=${encodeURIComponent(next)}` : "/api/feed",
+        );
+        if (generation !== loadGeneration.current) return;
+        const incoming = direct
+          ? [direct, ...data.memes.filter((meme) => meme.id !== direct.id)]
+          : data.memes;
+        setMemes((previous) => {
+          if (generation !== loadGeneration.current) return previous;
+          if (!next) return incoming;
+          const seen = new Set(previous.map((meme) => meme.id));
+          return [
+            ...previous,
+            ...data.memes.filter((meme) => {
+              if (seen.has(meme.id)) return false;
+              seen.add(meme.id);
+              return true;
+            }),
+          ];
+        });
+        if (generation !== loadGeneration.current) return;
+        setCursor(data.nextCursor);
+        if (!next) {
+          const first = direct?.id ?? data.memes[0]?.id ?? null;
+          setActiveId(first);
+          if (direct) {
+            window.setTimeout(() => {
+              if (generation === loadGeneration.current) scrollToCard(direct!.id, "auto");
+            }, 0);
+          }
+        }
+        setError(directError);
+      } catch (cause) {
+        if (generation !== loadGeneration.current) return;
+        setError(cause instanceof Error ? cause.message : "Could not load posts.");
+        if (!next) {
+          setMemes((previous) =>
+            generation === loadGeneration.current ? [] : previous,
+          );
+        }
+      } finally {
+        if (cursorRequest.current?.generation === generation && cursorRequest.current.cursor === next) {
+          cursorRequest.current = null;
+        }
+        if (generation === loadGeneration.current) setLoading(false);
+      }
+    },
+    [postId, scrollToCard],
+  );
+
   useEffect(() => {
-    void load();
+    const generation = ++loadGeneration.current;
+    cursorRequest.current = null;
+    setMemes([]);
+    setCursor(null);
+    setActiveId(null);
+    setReactedIds(new Set());
+    void load(undefined, generation);
+    return () => {
+      if (loadGeneration.current === generation) loadGeneration.current += 1;
+      cursorRequest.current = null;
+    };
   }, [load]);
-  async function react(reaction: Reaction) {
-    if (busy || !memes[0]) return;
-    const current = memes[0];
-    const before = memes;
-    setBusy(true);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const observer = new IntersectionObserver(
+      () => {
+        const viewport = root.getBoundingClientRect();
+        let visibleId: string | null = null;
+        let visibleHeight = 0;
+        for (const [id, card] of cardRefs.current) {
+          const bounds = card.getBoundingClientRect();
+          const height = Math.min(bounds.bottom, viewport.bottom) - Math.max(bounds.top, viewport.top);
+          if (height > visibleHeight) {
+            visibleId = id;
+            visibleHeight = height;
+          }
+        }
+        if (visibleId) setActiveId(visibleId);
+      },
+      { root, threshold: [0.2, 0.45, 0.7], rootMargin: "-8% 0px -8%" },
+    );
+    for (const card of cardRefs.current.values()) observer.observe(card);
+    return () => observer.disconnect();
+  }, [memes]);
+
+  function registerCard(id: string): CardRef {
+    return (element) => {
+      if (element) cardRefs.current.set(id, element);
+      else cardRefs.current.delete(id);
+    };
+  }
+
+  function nextCard(id: string, direction: 1 | -1) {
+    const index = memes.findIndex((meme) => meme.id === id);
+    if (index < 0) return;
+    const next = memes[index + direction];
+    if (next) scrollToCard(next.id);
+  }
+
+  async function react(id: string, reaction: Reaction) {
+    const current = memes.find((meme) => meme.id === id);
+    if (!current || pendingIds.has(id) || reactedIds.has(id)) return;
+    setPendingIds((previous) => new Set(previous).add(id));
     setError(null);
-    setMemes(memes.slice(1));
     try {
       await api<{ tags: string[]; reactionCount: number }>("/api/reactions", {
-        memeId: current.id,
+        memeId: id,
         reaction,
       });
-      if (before.length === 1) await load(cursor);
-    } catch (e) {
-      setMemes(before);
-      setError((e as Error).message);
+      setReactedIds((previous) => new Set(previous).add(id));
+      nextCard(id, 1);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "That reaction did not save.");
     } finally {
-      setBusy(false);
+      setPendingIds((previous) => {
+        const next = new Set(previous);
+        next.delete(id);
+        return next;
+      });
     }
   }
+
   function haptic() {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator)
-      navigator.vibrate(10);
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
   }
-  async function openComments() {
-    const current = memes[0];
-    if (!current) return;
+
+  async function openComments(id: string) {
     haptic();
-    setComments([]);
+    setComments({ postId: id, items: [] });
     setCommentsBusy(true);
     try {
-      setComments(
-        await api<FeedComment[]>(`/api/posts/${current.id}/comments`),
-      );
-    } catch (e) {
-      setError((e as Error).message);
+      const items = await api<FeedComment[]>(`/api/posts/${encodeURIComponent(id)}/comments`);
+      setComments((previous) => previous?.postId === id ? { postId: id, items } : previous);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load comments.");
     } finally {
       setCommentsBusy(false);
     }
   }
+
   async function addComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const current = memes[0];
-    if (!current || commentsBusy || !commentText.trim()) return;
+    const open = comments;
+    const body = commentText.trim();
+    if (!open || commentsBusy || !body) return;
     setCommentsBusy(true);
     try {
       const comment = await api<FeedComment>(
-        `/api/posts/${current.id}/comments`,
-        { body: commentText },
+        `/api/posts/${encodeURIComponent(open.postId)}/comments`,
+        { body },
       );
-      setComments((previous) => [...(previous ?? []), comment]);
+      setComments((previous) => previous?.postId === open.postId
+        ? { ...previous, items: [...previous.items, comment] }
+        : previous);
       setCommentText("");
-      setMemes((previous) =>
-        previous.map((item, index) =>
-          index === 0
-            ? { ...item, commentCount: (item.commentCount ?? 0) + 1 }
-            : item,
-        ),
-      );
-    } catch (e) {
-      setError((e as Error).message);
+      setMemes((previous) => previous.map((item) =>
+        item.id === open.postId
+          ? { ...item, commentCount: (item.commentCount ?? 0) + 1 }
+          : item,
+      ));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not add that comment.");
     } finally {
       setCommentsBusy(false);
     }
   }
-  async function saveCurrent() {
-    const current = memes[0];
-    if (!current || busy) return;
+
+  async function savePost(id: string) {
+    if (pendingIds.has(id)) return;
     haptic();
+    setPendingIds((previous) => new Set(previous).add(id));
     try {
       const result = await api<{ saved: boolean }>(
-        `/api/posts/${current.id}/save`,
+        `/api/posts/${encodeURIComponent(id)}/save`,
         {},
       );
-      setMemes((previous) =>
-        previous.map((item, index) =>
-          index === 0 ? { ...item, saved: result.saved } : item,
-        ),
-      );
-    } catch (e) {
-      setError((e as Error).message);
+      setMemes((previous) => previous.map((item) =>
+        item.id === id ? { ...item, saved: result.saved } : item,
+      ));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not update saved posts.");
+    } finally {
+      setPendingIds((previous) => {
+        const next = new Set(previous);
+        next.delete(id);
+        return next;
+      });
     }
   }
-  async function shareCurrent() {
-    const current = memes[0];
+
+  async function sharePost(id: string) {
+    const current = memes.find((meme) => meme.id === id);
     if (!current) return;
     haptic();
-    const url = `${window.location.origin}/?view=memes&post=${encodeURIComponent(current.id)}`;
+    const url = `${window.location.origin}/?view=memes&post=${encodeURIComponent(id)}`;
     try {
-      if (navigator.share) await navigator.share({ title: "A meme", url });
+      if (navigator.share) await navigator.share({ title: current.caption || "A post", url });
       else await navigator.clipboard.writeText(url);
     } catch {
-      setError("Could not share this video.");
+      setError("Could not share this post.");
     }
   }
-  const swipe = useSwipe({
-    disabled: busy || !memes[0],
-    onLeft: () => void react("pass"),
-    onRight: () => void react("like"),
-    onUp: () => void react("strong-like"),
-    onDown: () => void react("pass"),
-  });
+
+  function onFeedKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.target instanceof HTMLElement && event.target.closest("button, a, input, textarea")) return;
+    if (event.key !== "ArrowDown" && event.key !== "PageDown" && event.key !== "ArrowUp" && event.key !== "PageUp") return;
+    event.preventDefault();
+    if (activeId) nextCard(activeId, event.key === "ArrowUp" || event.key === "PageUp" ? -1 : 1);
+  }
+
   return (
     <>
-      <section className="tiktok-feed meme-feed">
-      <ErrorNote error={error} />
-      {error && !memes.length && (
-        <button className="button secondary full" onClick={() => void load()}>
-          Try again
-        </button>
-      )}
-      {loading && !memes.length ? (
-        <div
-          className="meme-skeleton skeleton tiktok-stage"
-          role="status"
-          aria-label="Loading memes"
-        />
-      ) : memes[0] ? (
-        <div
-          className="tiktok-stage meme-stage"
-          aria-busy={busy}
-          {...swipe}
-        >
-          <AnimatePresence initial={false} mode="popLayout">
-            <motion.div
-              className="tiktok-card meme-frame"
-              key={memes[0].id}
-              initial={{ opacity: 0, scale: reduced ? 1 : 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: reduced ? 1 : 0.96 }}
-              transition={{ duration: reduced ? 0.08 : 0.18 }}
-            >
-              <MemeMedia meme={memes[0]} fill />
-              <div className="meme-fyp-copy">
-                {memes[0].author ? (
-                  <button
-                    type="button"
-                    className="meme-fyp-author"
-                    onClick={() => onViewProfile(memes[0].author!.id)}
-                  >
-                    {memes[0].author.name}
-                  </button>
-                ) : null}
-                <p className="meme-fyp-caption">{memes[0].caption}</p>
-              </div>
-              <div className="meme-action-rail" aria-label="Meme actions">
-                <button
-                  className="fyp-action social"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void react("like")}
-                  aria-label={`Like this meme. ${memes[0].likeCount ?? 0} likes`}
-                >
-                  <Heart size={24} weight="fill" aria-hidden />
-                  <span>{memes[0].likeCount ?? 0}</span>
-                </button>
-                <button
-                  className="fyp-action social comments-action"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void openComments()}
-                  aria-haspopup="dialog"
-                  aria-label={`View ${memes[0].commentCount ?? 0} comments`}
-                >
-                  <ChatCircle size={23} weight="bold" aria-hidden />
-                  <span>{memes[0].commentCount ?? 0}</span>
-                </button>
-                <button
-                  className="fyp-action social"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void saveCurrent()}
-                  aria-label={
-                    memes[0].saved ? "Unsave this post" : "Save this post"
-                  }
-                >
-                  <BookmarkSimple
-                    size={23}
-                    weight={memes[0].saved ? "fill" : "bold"}
-                    aria-hidden
-                  />
-                  <span>{memes[0].saved ? "Saved" : "Save"}</span>
-                </button>
-                <button
-                  className="fyp-action social"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void shareCurrent()}
-                  aria-label="Share this post"
-                >
-                  <ShareNetwork size={22} weight="bold" aria-hidden />
-                  <span>Share</span>
-                </button>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      ) : (
-        !error && (
-          <Empty
-            title="You judged the entire internet."
-            action={
-              <button
-                className="button primary full"
-                onClick={() => void load(cursor)}
-              >
-                Load more memes <ArrowRight size={20} />
-              </button>
-            }
+      <section className="tiktok-feed meme-feed" aria-label="Original X post feed">
+        <ErrorNote error={error} />
+        {error && !memes.length && (
+          <button className="button secondary full" onClick={() => void load()}>
+            Try again
+          </button>
+        )}
+        {loading && !memes.length ? (
+          <div className="meme-skeleton skeleton tiktok-stage" role="status" aria-label="Loading posts" />
+        ) : memes.length ? (
+          <div
+            ref={scrollRef}
+            className="feed-scroll"
+            tabIndex={0}
+            onKeyDown={onFeedKeyDown}
+            onScroll={(event) => {
+              const element = event.currentTarget;
+              if (cursor && !loading && element.scrollTop + element.clientHeight >= element.scrollHeight - element.clientHeight) void load(cursor);
+            }}
+            aria-busy={loading}
           >
-            More nonsense is being prepared. Your reactions are saved.
-          </Empty>
-        )
-      )}
+            {memes.map((meme) => {
+              const pending = pendingIds.has(meme.id);
+              const reacted = reactedIds.has(meme.id);
+              return (
+                <article
+                  className={`feed-card ${meme.type === "x" ? "feed-card-x" : ""} ${activeId === meme.id ? "feed-post-active" : ""}`}
+                  data-post-id={meme.id}
+                  key={meme.id}
+                  ref={registerCard(meme.id)}
+                  tabIndex={-1}
+                  aria-label={meme.author ? `Post by ${meme.author.name}` : "Original X post"}
+                >
+                  <div className="feed-card-media">
+                    <MemeMedia meme={meme} fill active={activeId === meme.id} />
+                  </div>
+                  {meme.type !== "x" && <div className="meme-fyp-copy">
+                    {meme.author ? (
+                      <button
+                        type="button"
+                        className="meme-fyp-author"
+                        onClick={() => onViewProfile(meme.author!.id)}
+                      >
+                        {meme.author.name}
+                      </button>
+                    ) : null}
+                    <p className="meme-fyp-caption">{meme.caption}</p>
+                  </div>}
+                  <div className="meme-reaction-row" aria-label="Reaction choices">
+                    <button type="button" className="feed-reaction like" disabled={pending || reacted} onClick={() => void react(meme.id, "like")}>
+                      <Heart size={17} weight="fill" aria-hidden /> Like
+                    </button>
+                    <button type="button" className="feed-reaction" disabled={pending || reacted} onClick={() => void react(meme.id, "pass")}>
+                      <ArrowRight size={17} aria-hidden /> Pass
+                    </button>
+                    <button type="button" className="feed-reaction strong" disabled={pending || reacted} onClick={() => void react(meme.id, "strong-like")}>
+                      <Heart size={17} weight="bold" aria-hidden /> Strong like
+                    </button>
+                  </div>
+                  <div className="meme-action-rail" aria-label="Post actions">
+                    <button className="fyp-action social" type="button" disabled={pending} onClick={() => void openComments(meme.id)} aria-haspopup="dialog" aria-label={`View ${meme.commentCount ?? 0} comments`}>
+                      <ChatCircle size={23} weight="bold" aria-hidden />
+                      <span>{meme.commentCount ?? 0}</span>
+                    </button>
+                    <button className="fyp-action social" type="button" disabled={pending} onClick={() => void savePost(meme.id)} aria-label={meme.saved ? "Unsave this post" : "Save this post"}>
+                      <BookmarkSimple size={23} weight={meme.saved ? "fill" : "bold"} aria-hidden />
+                      <span>{meme.saved ? "Saved" : "Save"}</span>
+                    </button>
+                    <button className="fyp-action social" type="button" disabled={pending} onClick={() => void sharePost(meme.id)} aria-label="Share this post">
+                      <ShareNetwork size={22} weight="bold" aria-hidden />
+                      <span>Share</span>
+                    </button>
+                  </div>
+                  {reacted && <p className="feed-reaction-state" role="status">Reaction saved. Scroll for the next original.</p>}
+                </article>
+              );
+            })}
+            {loading && <Loading rows={1} />}
+          </div>
+        ) : (
+          !error && (
+            <Empty
+              title="You judged the entire internet."
+              action={<button className="button primary full" onClick={() => void load(cursor)}>Load more posts <ArrowRight size={20} /></button>}
+            >
+              More original posts are being prepared. Your reactions are saved.
+            </Empty>
+          )
+        )}
       </section>
       {comments !== null && (
         <Dialog title="Comments" onClose={() => setComments(null)} className="comments-sheet">
           <div className="comments-list">
-            {commentsBusy && !comments.length ? (
+            {commentsBusy && !comments.items.length ? (
               <Loading />
-            ) : comments.length ? (
-              comments.map((comment) => (
+            ) : comments.items.length ? (
+              comments.items.map((comment) => (
                 <article className="comment" key={comment.id}>
                   <strong>{comment.author.name}</strong>
                   <p>{comment.body}</p>
@@ -289,19 +396,8 @@ export function FeedScreen({
             )}
           </div>
           <form className="comment-form" onSubmit={addComment}>
-            <input
-              value={commentText}
-              onChange={(event) => setCommentText(event.target.value)}
-              placeholder="Add a comment"
-              maxLength={500}
-              disabled={commentsBusy}
-            />
-            <button
-              className="button primary"
-              disabled={commentsBusy || !commentText.trim()}
-            >
-              Post
-            </button>
+            <input value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Add a comment" maxLength={500} disabled={commentsBusy} />
+            <button className="button primary" disabled={commentsBusy || !commentText.trim()}>Post</button>
           </form>
         </Dialog>
       )}
@@ -320,14 +416,12 @@ export function SavedScreen({
   useEffect(() => {
     api<{ memes: Meme[] }>("/api/saved")
       .then((data) => setSaved(data.memes))
-      .catch((cause) =>
-        setError(cause instanceof Error ? cause.message : "Could not load saved posts."),
-      );
+      .catch((cause) => setError(cause instanceof Error ? cause.message : "Could not load saved posts."));
   }, []);
 
   async function removeSaved(id: string) {
     try {
-      await api<{ saved: boolean }>(`/api/posts/${id}/save`, {});
+      await api<{ saved: boolean }>(`/api/posts/${encodeURIComponent(id)}/save`, {});
       setSaved((previous) => previous?.filter((post) => post.id !== id) ?? []);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not update saved posts.");
@@ -343,24 +437,16 @@ export function SavedScreen({
       ) : saved?.length ? (
         <div className="saved-post-list">
           {saved.map((post) => (
-            <article className="saved-post-card" key={post.id}>
+            <article className={`saved-post-card ${post.type === "x" ? "saved-x-post" : ""}`} key={post.id}>
               <MemeMedia meme={post} compact />
               <div className="saved-post-copy">
                 {post.author ? (
-                  <button
-                    type="button"
-                    className="saved-post-author"
-                    onClick={() => onViewProfile(post.author!.id)}
-                  >
+                  <button type="button" className="saved-post-author" onClick={() => onViewProfile(post.author!.id)}>
                     {post.author.name}
                   </button>
                 ) : null}
-                <p>{post.caption}</p>
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => void removeSaved(post.id)}
-                >
+                {post.type !== "x" && <p>{post.caption}</p>}
+                <button type="button" className="text-button" onClick={() => void removeSaved(post.id)}>
                   Remove from saved
                 </button>
               </div>
@@ -368,9 +454,7 @@ export function SavedScreen({
           ))}
         </div>
       ) : (
-        <Empty title="Nothing saved yet.">
-          Save a post and it will stay here.
-        </Empty>
+        <Empty title="Nothing saved yet.">Save a post and it will stay here.</Empty>
       )}
     </section>
   );

@@ -8,6 +8,7 @@ import type * as EngineModule from "../features/matching/engine";
 import type * as MatchingModule from "../features/matches/matches";
 import type * as ChatModule from "../features/chat/chat";
 import type * as ProfileModule from "../features/profile/profile";
+import type * as SocialModule from "../features/social/social";
 
 process.env.DATABASE_URL = ":memory:";
 process.env.BETTER_AUTH_SECRET =
@@ -22,6 +23,7 @@ let engine: typeof EngineModule;
 let matching: typeof MatchingModule;
 let chat: typeof ChatModule;
 let profile: typeof ProfileModule;
+let social: typeof SocialModule;
 
 before(async () => {
   // Deliberately exercise config's module-loading boundary after selecting an isolated
@@ -33,6 +35,7 @@ before(async () => {
   matching = await import("../features/matches/matches");
   chat = await import("../features/chat/chat");
   profile = await import("../features/profile/profile");
+  social = await import("../features/social/social");
 });
 after(() => database.sqlite.close());
 beforeEach(() => {
@@ -127,6 +130,91 @@ test("replacing a reaction changes the tasteprint without double-counting and ke
     feed.getFeed("a", null).memes.some((meme) => meme.id === "red-00"),
     false,
   );
+});
+
+test("external X posts survive feed, social actions, shared compatibility, and chat", () => {
+  database.sqlite.exec("DELETE FROM memes;");
+  const now = new Date("2026-01-01T00:00:00Z");
+  const xPost = {
+    id: "1234567890123456789",
+    url: "https://x.com/official/status/1234567890123456789",
+    author: "Official Account",
+    mediaType: "text" as const,
+  };
+  database.db
+    .insert(schema.memes)
+    .values({
+      id: "x-1234567890123456789",
+      type: "x",
+      prompt: "Official X post",
+      caption: "The original post text.",
+      tags: { absurd: 1 },
+      chaos: 2,
+      taxonomyVersion: 2,
+      assetPath: null,
+      posterPath: null,
+      xPost,
+      status: "ready",
+      model: "official-x",
+      providerRequestId: null,
+      failure: null,
+      createdAt: now,
+      completedAt: now,
+      idempotencyKey: null,
+      requestedBy: null,
+    })
+    .run();
+  const surfaced = feed.getFeed("a", null).memes.find((meme) => meme.id.startsWith("x-"));
+  assert.deepEqual(surfaced, {
+    id: "x-1234567890123456789",
+    type: "x",
+    src: null,
+    poster: null,
+    xPost,
+    caption: "The original post text.",
+    author: null,
+    likeCount: 0,
+    commentCount: 0,
+    saved: false,
+  });
+  assert.deepEqual(social.getPost("a", "x-1234567890123456789"), surfaced);
+  assert.deepEqual(social.toggleSave("a", "x-1234567890123456789"), { saved: true });
+  assert.equal(social.getSavedMemes("a")[0].type, "x");
+  assert.equal(
+    social.addComment("a", "x-1234567890123456789", { body: "Still real." }).memeId,
+    "x-1234567890123456789",
+  );
+  feed.setReaction("a", "x-1234567890123456789", "like");
+  feed.setReaction("close", "x-1234567890123456789", "like");
+  const shared = engine.getCandidates("a").find((candidate) => candidate.id === "close");
+  assert.equal(shared?.compatibility.sharedMemes[0]?.type, "x");
+  const sent = chat.sendMessage("a", matchPair().id, {
+    body: "Sharing the original.",
+    memeId: "x-1234567890123456789",
+  }).message;
+  assert.equal(sent.memeId, "x-1234567890123456789");
+
+  database.db
+    .insert(schema.memes)
+    .values({
+      id: "x-invalid",
+      type: "x",
+      prompt: "Invalid source",
+      caption: "Should not surface.",
+      tags: { absurd: 1 },
+      chaos: 2,
+      taxonomyVersion: 2,
+      status: "ready",
+      model: "official-x",
+      createdAt: now,
+      xPost: { ...xPost, id: "999" },
+    })
+    .run();
+  assert.equal(
+    feed.getFeed("a", null).memes.some((meme) => meme.id === "x-invalid"),
+    false,
+  );
+  assert.throws(() => feed.setReaction("a", "x-invalid", "like"));
 });
 
 test("a fixed overlap dataset ranks the matching taste above a disjoint taste", () => {

@@ -2525,3 +2525,299 @@ label > .label-note {
   border-radius: 12px;
   border: 1px solid var(--divider);
 }
+.feed-scroll {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y mandatory;
+  scroll-snap-stop: always;
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff4d transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.feed-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+.feed-card {
+  position: relative;
+  min-height: 100%;
+  height: max(100%, 640px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  isolation: isolate;
+  overflow: visible;
+  background: #0f0f0f;
+}
+.feed-card-media {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  background: #0f0f0f;
+  scrollbar-width: none;
+}
+.feed-card-media::-webkit-scrollbar {
+  display: none;
+}
+.feed-card-media > .meme-media {
+  min-height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.feed-card-media > .meme-media > img,
+.feed-card-media > .meme-media > video {
+  background: #0f0f0f;
+}
+.feed-card .meme-fyp-copy {
+  bottom: 92px;
+}
+.meme-reaction-row {
+  position: absolute;
+  z-index: 4;
+  left: 16px;
+  right: 104px;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.feed-reaction {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid #ffffff5c;
+  border-radius: 10px;
+  background: #111111d9;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 8px #000;
+}
+.feed-reaction:hover {
+  background: #ffffff2e;
+}
+.feed-reaction.like {
+  border-color: var(--accent);
+}
+.feed-reaction.strong {
+  border-color: #ffffff99;
+}
+.feed-reaction-state {
+  position: absolute;
+  z-index: 4;
+  left: 16px;
+  right: 104px;
+  bottom: max(64px, calc(46px + env(safe-area-inset-bottom)));
+  color: #fff;
+  font-size: 12px;
+  text-shadow: 0 1px 8px #000;
+}
+.x-media {
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+  background: #0f0f0f;
+}
+.x-embed {
+  width: min(100%, 620px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: max(18px, env(safe-area-inset-top)) 14px 12px;
+  color: #fff;
+}
+.x-embed-compact {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  color: var(--ink);
+}
+.x-embed-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  color: #ffffffc7;
+  font-size: 12px;
+  line-height: 18px;
+}
+.x-embed-heading strong {
+  color: #fff;
+}
+.x-embed-mark {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid #ffffff73;
+  border-radius: 50%;
+  color: #fff;
+  font-family: Georgia, serif;
+  font-size: 17px;
+}
+.x-embed-frame {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: visible;
+}
+.x-embed-frame > div {
+  width: 100%;
+  max-width: 550px;
+}
+.x-embed-status {
+  color: #ffffffb8;
+  font-size: 12px;
+  line-height: 18px;
+}
+.x-embed-fallback {
+  display: grid;
+  gap: 10px;
+  max-width: 560px;
+  padding: 18px;
+  border: 1px solid #ffffff38;
+  border-radius: 14px;
+  background: #1a1b20;
+  color: #fff;
+}
+.x-embed-compact .x-embed-fallback {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+.x-embed-fallback a {
+  width: fit-content;
+  color: var(--accent);
+  font-weight: 700;
+}
+.x-embed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.x-embed-actions button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #ffffff66;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.saved-post-card .x-embed-heading {
+  color: var(--muted);
+}
+.saved-post-card .x-embed-heading strong {
+  color: var(--ink);
+}
+.saved-post-card .x-embed-mark {
+  width: 20px;
+  height: 20px;
+  color: var(--ink);
+  border-color: var(--divider);
+  font-size: 13px;
+}
+@media (max-width: 430px) {
+  .feed-card:not(.feed-card-x) {
+    height: max(100%, 600px);
+  }
+  .feed-card .meme-fyp-copy {
+    left: 12px;
+    right: 92px;
+    bottom: 96px;
+  }
+  .meme-reaction-row {
+    left: 12px;
+    right: 88px;
+  }
+  .feed-reaction {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+  .meme-action-rail {
+    right: 8px;
+    bottom: max(92px, calc(80px + env(safe-area-inset-bottom)));
+  }
+  .x-embed {
+    padding-inline: 10px;
+  }
+}
+.feed-card-x {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 100%;
+  padding-bottom: 14px;
+}
+.feed-card-x .feed-card-media {
+  position: relative;
+  inset: auto;
+  flex: 1 0 auto;
+  overflow: visible;
+}
+.feed-card-x .meme-media,
+.meme-media.x-media {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+.feed-card-x .meme-reaction-row,
+.feed-card-x .meme-action-rail,
+.feed-card-x .feed-reaction-state {
+  position: static;
+  margin: 8px auto;
+  width: fit-content;
+  max-width: 100%;
+}
+.feed-card-x .meme-action-rail {
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+}
+.feed-card-x .fyp-action {
+  width: 48px;
+  min-height: 44px;
+}
+.x-embed-frame iframe {
+  border-radius: 14px;
+}
+.x-source-link {
+  color: var(--accent);
+  font-size: 13px;
+}
+.saved-x-post {
+  grid-template-columns: minmax(0, 1fr);
+}
+.saved-x-post .meme-media.x-media,
+.chat-context > .meme-media.x-media {
+  width: 100%;
+  text-align: left;
+}
+.saved-x-post .meme-media.x-media {
+  border: 0;
+  background: transparent;
+}
+.reveal-meme:has(.x-media) {
+  max-width: 100%;
+  text-align: left;
+}
+.x-embed-compact .x-embed-fallback p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}

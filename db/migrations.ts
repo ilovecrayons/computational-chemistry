@@ -47,17 +47,54 @@ ALTER TABLE profiles ADD COLUMN country_code TEXT NOT NULL DEFAULT 'US';
 UPDATE profiles SET state = CASE WHEN instr(location, ',') > 0 THEN trim(substr(location, instr(location, ',') + 1)) ELSE '' END WHERE state = '';
 UPDATE profiles SET country = 'United States' WHERE country = '';
 `;
+const memesV5 = `
+CREATE TABLE memes_v5 (
+  id TEXT PRIMARY KEY NOT NULL,
+  type TEXT NOT NULL CHECK(type IN ('image','video','x')),
+  prompt TEXT NOT NULL,
+  caption TEXT NOT NULL,
+  tags TEXT NOT NULL,
+  chaos INTEGER NOT NULL CHECK(chaos BETWEEN 1 AND 5),
+  taxonomy_version INTEGER NOT NULL,
+  asset_path TEXT,
+  poster_path TEXT,
+  x_post TEXT,
+  status TEXT NOT NULL CHECK(status IN ('queued','generating','ready','failed','expired')),
+  model TEXT NOT NULL,
+  provider_request_id TEXT,
+  failure TEXT,
+  created_at INTEGER NOT NULL,
+  completed_at INTEGER,
+  idempotency_key TEXT UNIQUE,
+  requested_by TEXT
+);
+INSERT INTO memes_v5 (
+  id,type,prompt,caption,tags,chaos,taxonomy_version,asset_path,poster_path,x_post,
+  status,model,provider_request_id,failure,created_at,completed_at,idempotency_key,requested_by
+)
+SELECT
+  id,type,prompt,caption,tags,chaos,taxonomy_version,asset_path,poster_path,NULL,
+  status,model,provider_request_id,failure,created_at,completed_at,idempotency_key,requested_by
+FROM memes;
+DROP TABLE memes;
+ALTER TABLE memes_v5 RENAME TO memes;
+CREATE INDEX memes_status_created_idx ON memes(status,created_at,id);
+`;
+
+function isApplied(database: Database.Database, version: number): boolean {
+  return Boolean(
+    database
+      .prepare("SELECT version FROM schema_migrations WHERE version = ?")
+      .get(version),
+  );
+}
 
 export function migrate(database: Database.Database) {
   database.exec(
     "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL)",
   );
   database.transaction(() => {
-    if (
-      !database
-        .prepare("SELECT version FROM schema_migrations WHERE version = 1")
-        .get()
-    ) {
+    if (!isApplied(database, 1)) {
       database.exec(initial);
       database
         .prepare(
@@ -65,11 +102,7 @@ export function migrate(database: Database.Database) {
         )
         .run(Date.now());
     }
-    if (
-      !database
-        .prepare("SELECT version FROM schema_migrations WHERE version = 2")
-        .get()
-    ) {
+    if (!isApplied(database, 2)) {
       for (const statement of profileV2.trim().split(";\n")) {
         if (statement.trim()) {
           try {
@@ -85,11 +118,7 @@ export function migrate(database: Database.Database) {
         )
         .run(Date.now());
     }
-    if (
-      !database
-        .prepare("SELECT version FROM schema_migrations WHERE version = 3")
-        .get()
-    ) {
+    if (!isApplied(database, 3)) {
       database.exec(socialV3);
       database
         .prepare(
@@ -97,11 +126,7 @@ export function migrate(database: Database.Database) {
         )
         .run(Date.now());
     }
-    if (
-      !database
-        .prepare("SELECT version FROM schema_migrations WHERE version = 4")
-        .get()
-    ) {
+    if (!isApplied(database, 4)) {
       for (const statement of profileV4.trim().split(";\n")) {
         if (statement.trim()) database.exec(`${statement.trim()};`);
       }
@@ -112,4 +137,22 @@ export function migrate(database: Database.Database) {
         .run(Date.now());
     }
   })();
+
+  if (isApplied(database, 5)) return;
+  const foreignKeysEnabled =
+    Number(database.pragma("foreign_keys", { simple: true })) === 1;
+  database.pragma("foreign_keys = OFF");
+  try {
+    database.transaction(() => {
+      database.exec(memesV5);
+      database
+        .prepare(
+          "INSERT INTO schema_migrations(version,applied_at) VALUES(5,?)",
+        )
+        .run(Date.now());
+    })();
+  } finally {
+    database.pragma(`foreign_keys = ${foreignKeysEnabled ? "ON" : "OFF"}`);
+  }
 }
+

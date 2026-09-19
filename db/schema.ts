@@ -13,6 +13,7 @@ import type {
   NotificationType,
   Preferences,
   Reaction,
+  XPost,
 } from "../lib/contracts";
 
 export const users = sqliteTable("users", {
@@ -127,7 +128,7 @@ export const memes = sqliteTable(
   "memes",
   {
     id: text("id").primaryKey(),
-    type: text("type", { enum: ["image", "video"] }).notNull(),
+    type: text("type", { enum: ["image", "video", "x"] }).notNull(),
     prompt: text("prompt").notNull(),
     caption: text("caption").notNull(),
     tags: text("tags", { mode: "json" })
@@ -137,6 +138,7 @@ export const memes = sqliteTable(
     taxonomyVersion: integer("taxonomy_version").notNull(),
     assetPath: text("asset_path"),
     posterPath: text("poster_path"),
+    xPost: text("x_post", { mode: "json" }).$type<XPost | null>(),
     status: text("status", {
       enum: ["queued", "generating", "ready", "failed", "expired"],
     }).notNull(),
