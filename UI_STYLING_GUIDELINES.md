@@ -1,4 +1,4 @@
-# Memeant to Be: UI and Styling Guidelines
+# Computational Chemistry: UI and Styling Guidelines
 
 ## 1. Design Read
 
@@ -28,15 +28,9 @@ Find someone who laughs at the same garbage.
 
 ### Naming
 
-Recommended product name: **Memeant to Be**
+Product name: **Computational Chemistry**
 
-Acceptable alternatives:
-
-- LOLmates
-- CringeCompatible
-- Brainrot Betrothed
-
-Use one product name consistently. Do not mix alternatives within the application.
+Use this product name consistently in the interface, metadata, and documentation.
 
 ## 3. Experience Principles
 

@@ -1,4 +1,4 @@
-# Memeant to Be: Technical Implementation Plan
+# Computational Chemistry: Technical Implementation Plan
 
 ## 1. Goal
 
@@ -535,3 +535,139 @@ The MVP is complete when:
 - Matched users can exchange persistent messages.
 - The full flow works at a mobile viewport and in the centered desktop presentation.
 - The demo can be reset without regenerating paid media.
+
+## 20. Local Setup and Manual Provisioning
+
+This section describes the implemented local prototype, not a managed deployment service. Run commands from the repository root. The ordinary demo never requires an xAI key; actual xAI generation does.
+
+### Prerequisites and environment
+
+- Use Node.js 22.12 or newer (Node.js 24 LTS recommended) and npm. A native `better-sqlite3` installation may require Python 3, `make`, and a C++ compiler if a prebuilt binary is unavailable.
+- Install `ffmpeg` with SVG decoding through `librsvg` and H.264 encoding through `libx264`. On Ubuntu, install the distribution's `ffmpeg` package. It is required to provision the six real offline MP4 clips, not to replace them with static images. A missing encoder produces a clear provisioning failure. Provisioning also writes the fictional portraits into `public/demo`.
+- Keep the application, SQLite database, and media on one machine for this prototype. The runtime account must be able to write the database directory, its SQLite WAL/SHM files, and the media directory. Demo provisioning/reset also needs write access to `public/demo`.
+
+```sh
+npm ci
+cp .env.example .env
+node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
+```
+
+Copy the random output into `BETTER_AUTH_SECRET` in `.env`; do not retain the example placeholder or commit `.env`. Keep the secret stable between restarts so sessions remain valid. The server requires at least 32 characters.
+
+For the localhost demo, use:
+
+```dotenv
+DATABASE_URL=file:./data/memeant.db
+APP_BASE_URL=http://localhost:3000
+DEMO_MODE=true
+# Set BETTER_AUTH_SECRET to the random value generated above.
+# XAI_API_KEY can remain empty for the illustrated offline demo.
+```
+
+`APP_BASE_URL` must be the exact origin used in the browser: `localhost` and `127.0.0.1` are not interchangeable for cookies and write-origin checks. Use HTTPS and the actual trusted origin for a hosted instance; do not send sessions or credentials over a public HTTP connection. Never use a `NEXT_PUBLIC_` variable for secrets. `DATABASE_URL` is a local SQLite filename with an optional `file:` prefix, not a hosted SQL connection string. `MEDIA_DIR` optionally overrides the default `./data/media`.
+
+For persistence outside localhost, configure absolute paths on a writable persistent volume, for example `DATABASE_URL=file:/srv/memeant/memeant.db` and `MEDIA_DIR=/srv/memeant/media`. Back up the database and referenced media together. Ephemeral/serverless filesystems, multiple application replicas, and shared-network SQLite storage are not supported by this prototype.
+
+If using a reverse proxy, overwrite client-supplied forwarding/IP headers at that trusted boundary; authentication rate limiting must not trust arbitrary public `X-Forwarded-For` values. Keep direct access to the application port private.
+
+### Migrate, provision the offline library, and run
+
+```sh
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+Open `http://localhost:3000`. `db:migrate` applies the idempotent local migration runner. `db:seed` creates the fictional accounts, provisions missing offline media, and restores the deterministic demo records; it is a reset command, not a way to preserve current demo progress.
+
+The offline library contains 60 original SVG meme illustrations, six playable silent six-second MP4 animations, and ten fictional illustrated portraits. It is visibly identified as an **offline illustrated demo**, not represented as xAI-generated media. No provider calls or paid generation happen during seeding. Existing durable media is reused. To provision or repair just this local library, without explicitly reseeding the personas:
+
+```sh
+npm run media:demo
+```
+
+For a production-mode local run, finish provisioning before starting the built server:
+
+```sh
+npm run build
+npm run start
+```
+
+`npm run dev` and `npm run start` bind to `0.0.0.0`; apply host/firewall restrictions if this machine is on an untrusted network. Run only one server on port 3000. The package also exposes `npm run typecheck`, `npm test`, and `npm run test:e2e`.
+
+### Fictional accounts and repeatable walkthrough
+
+Every demo account uses the password `Memeant-demo-2026!`. The addresses are:
+
+| Persona | Demo email |
+| --- | --- |
+| Alex, fresh start | `alex@demo.local` |
+| Jules | `jules@demo.local` |
+| Sam | `sam@demo.local` |
+| River | `river@demo.local` |
+| Morgan | `morgan@demo.local` |
+| Casey | `casey@demo.local` |
+| Taylor | `taylor@demo.local` |
+| Robin | `robin@demo.local` |
+| Avery | `avery@demo.local` |
+| Quinn | `quinn@demo.local` |
+
+These are fictional adult fixtures, not real people or production credentials. Sign in as Alex, complete the profile, select exactly three initial humor tones, and give the first 15 memes a normal **LOL** reaction. That sequence includes images and video and produces the intended top-ranked Jules profile. Jules has a seeded reciprocal like, so liking Jules creates a mutual match. The suggested chat opener only fills the composer; press **Send message** to persist it with the shared meme reference.
+
+Alex starts with an incomplete profile and no reaction-derived tasteprint; initial profile tags do not manufacture a compatibility score. **Me → Reset demo** restores fictional profiles, reactions, decisions, matches, and messages while keeping account sessions and durable media. Alex returns to onboarding after reset. Complete the adult profile gate again before reading the protected feed, tasteprint, candidates, or messages.
+
+### Run the requested browser checks
+
+Playwright uses one serial worker against an already-running application. It does not spawn a second server. Use a disposable demo database: the tests deliberately reset fictional demo progress and then exercise actual authentication, profile setup, image/video reactions, Jules ranking, mutual matching, an unsent-then-explicitly-sent shared-meme opener, reload persistence, reset preservation, required responsive widths, and dialog keyboard focus. Additional regressions hold real network responses to verify draft preservation during slow sends and recovery of messages missed between polls. No fake application responses or paid xAI requests are used.
+
+```sh
+npx playwright install chromium
+# With npm run dev or npm run start already running in another terminal:
+PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:e2e
+```
+
+On a minimal Linux host, install Playwright's Chromium system dependencies as well (`npx playwright install --with-deps chromium`, with the required package-management privileges). `PLAYWRIGHT_BASE_URL` must match the application's `APP_BASE_URL`. The default is port 3000. Review the actual UI at 320, 390, 430, 768, and 1280 pixels wide; automated overflow checks do not replace visual checks for spacing, clipping, or obscured controls.
+
+### Provision real xAI media deliberately
+
+Manual prerequisites for live generation:
+
+- Obtain an xAI API key for a funded account and confirm access to `grok-imagine-image-2.0` and `grok-imagine-video-1.5`, current pricing, quota, and usage-policy requirements.
+- Set `XAI_API_KEY` only in the server environment or ignored `.env`, then restart the application. Do not place credentials in browser code, chat, screenshots, or the PR.
+- Permit outbound HTTPS to xAI and its approved media delivery hosts. Ensure the configured SQLite/media volume is writable and has sufficient free space.
+- Restrict access before attaching a funded key. Authenticated development users can use the studio; production-mode demo administration is restricted to the Alex fixture with `DEMO_MODE=true`. This is not a production administrator provisioning system. The publicly documented fixture password must not protect a publicly exposed funded generation endpoint; keep the demo behind trusted-network or upstream access controls.
+
+**Me → Open media studio** starts one explicit paid image or six-second video job using the selected controlled taxonomy. Approve the paid-request checkbox first. The browser disables duplicate submissions and retains the same settings/idempotency token when a response is uncertain; use **Retry same job** on that screen rather than creating another paid request. Pending jobs are checked at five-second intervals, at most 60 times over five minutes per checking window. Checks stop on leaving the screen, pause in hidden tabs, and can be resumed explicitly without creating a paid job. Failed and expired jobs remain distinct from ready media.
+
+For the complete pre-generated xAI presentation library:
+
+```sh
+npm run media:generate -- --confirm --batch pitch-2026 --images 60 --videos 6
+```
+
+`--confirm` is explicit paid consent. `--batch` is required and accepts 1–70 letters, digits, underscores, or hyphens. `--images` accepts 0–60; `--videos` accepts 0–6; at least one asset must be requested. The defaults are 60 and 6. Reuse the exact batch key and settings to resume an interrupted batch rather than creating duplicate paid jobs. A new batch key means new paid work. The CLI checks pending jobs in a bounded window of at most 180 five-second polls per job; it does not run a hidden infinite worker or automatically retry paid failures.
+
+For a smaller explicit integration smoke check:
+
+```sh
+npm run media:generate -- --confirm --batch live-smoke-2026 --images 1 --videos 1
+```
+
+Review each generated image/video and its local `/api/media/:id` asset before presenting it. Verify that both media types remain playable from local storage without using provider URLs, including after an application restart. Do not infer provider success from the offline demo or a mocked response.
+
+**Live external checks are pending a funded `XAI_API_KEY` and the required model access.** Without those prerequisites, the generation route returns a clear 503 configuration error. The offline walkthrough is independently usable, but is not evidence that a real xAI image/video or the paid library has been generated, downloaded, or verified.
+
+### Media maintenance and prototype limits
+
+```sh
+# Read-only preview:
+npm run media:cleanup
+# Apply the previewed cleanup:
+npm run media:cleanup -- --apply
+```
+
+Cleanup deletes only unreferenced media files or abandoned demo-video temporary directories older than 24 hours. It preserves database-referenced assets, active jobs, recent files, and symlinks. `--apply` is the only deletion flag; the default is a dry run. Resetting the demo is separate and never deletes or regenerates the paid library.
+
+This remains a single-process, local-storage dating prototype: no production moderation team, identity verification, account recovery/email delivery workflow, realtime messaging, distributed job worker, cloud media store, or production-scale operations are supplied. Block/report controls and an 18+ profile gate do not make a public launch safe. Review submitted reports manually, keep real personal data out of the fixture, and treat compatibility as explainable entertainment rather than a scientific relationship prediction.
+
+The verified production build currently emits three Turbopack file-tracing warnings for dynamic local-media filesystem paths. Compilation and the running application pass their checks; these warnings do not establish that a standalone/serverless bundle is supported. Deploy the complete single-host application with its configured persistent directories.
