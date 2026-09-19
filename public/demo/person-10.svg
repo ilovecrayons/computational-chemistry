@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="760" viewBox="0 0 600 760" role="img" aria-label="Illustrated portrait of Quinn, a fictional adult demo persona">
+    <rect width="600" height="760" fill="#cfd9cd"/>
+    <path d="M0 600Q180 485 350 600T600 559V760H0Z" fill="#f7f1dd" opacity=".45"/>
+    <circle cx="445" cy="157" r="108" fill="#f7efdd" opacity=".5"/>
+    <path d="M29 544q-25-110 30-194m-20 119q-36-47-8-70m12 32q50-54 33-80" fill="none" stroke="#788665" stroke-width="15" stroke-linecap="round" opacity=".55"/>
+    
+    <path d="M103 760v-81q0-147 145-176h106q145 29 145 176v81z" fill="#8a5c49"/>
+    <path d="M259 440v82q39 56 83 0v-82" fill="#b97e59" stroke="#644733" stroke-width="3"/>
+    <path d="M259 459q39 44 83 0v28q-42 33-83 0z" fill="#7d4e37" opacity=".17"/>
+    <ellipse cx="183" cy="328" rx="27" ry="39" fill="#b97e59"/><ellipse cx="416" cy="328" rx="27" ry="39" fill="#b97e59"/>
+    <path d="M184 253q0-123 114-123t120 123v97q0 123-118 143-116-20-116-143z" fill="#b97e59"/>
+    <path d="M180 298q-39-108 13-159 28-50 86-38 100-52 142 56 28 48-5 142l-27-78q-62 26-123-9l-69 71z" fill="#24271f"/>
+    <path d="M219 299q28-17 51-1m61 0q26-15 49 1" fill="none" stroke="#24271f" stroke-width="8" stroke-linecap="round"/>
+    <ellipse cx="246" cy="326" rx="8" ry="11" fill="#2a2922"/><ellipse cx="354" cy="326" rx="8" ry="11" fill="#2a2922"/>
+    <circle cx="249" cy="323" r="2.5" fill="#fff4db"/><circle cx="357" cy="323" r="2.5" fill="#fff4db"/>
+    <path d="M299 329l-10 41q13 9 26 0" fill="none" stroke="#80543c" stroke-width="4" stroke-linecap="round"/>
+    <path d="M266 405q34 27 69-1" fill="#fff2df" stroke="#754b38" stroke-width="4" stroke-linejoin="round"/>
+    
+    
+    <path d="M249 526q53 74 103 0" fill="none" stroke="#f1e4c9" stroke-width="5"/>
+    <path d="M174 680v80m256-80v80" stroke="#292820" stroke-opacity=".18" stroke-width="5"/>
+    <text x="36" y="723" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#fff8e8" opacity=".85">fictional demo portrait</text>
+  </svg>
