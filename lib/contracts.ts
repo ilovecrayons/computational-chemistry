@@ -90,6 +90,7 @@ export interface Compatibility {
 
 export interface Candidate extends PublicProfile {
   compatibility: Compatibility;
+  distanceMiles: number | null;
   /** Profiles shown for context when current filters have no matches. */
   browseOnly?: boolean;
 }

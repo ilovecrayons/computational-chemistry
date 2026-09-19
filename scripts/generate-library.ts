@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     if (generation.status !== "ready") {
       failures++;
       console.error(
-        `${generation.id}: ${generation.status}${generation.failure ? ` — ${generation.failure}` : " — polling window ended; resume with the same batch key."}`,
+        `${generation.id}: ${generation.status}${generation.failure ? ` - ${generation.failure}` : " - polling window ended; resume with the same batch key."}`,
       );
       if (generation.status === "generating" || generation.status === "queued")
         break;

@@ -22,6 +22,7 @@ import {
 } from "@/features/memes/taxonomy";
 import {
   api,
+  CardSkeleton,
   ErrorNote,
   Loading,
   MemeMedia,
@@ -436,7 +437,7 @@ export function AdminScreen({ onBack }: { onBack: () => void }) {
         </div>
         <ErrorNote error={historyError} />
         {loading && generations.length === 0 ? (
-          <Loading rows={2} />
+          <CardSkeleton count={2} />
         ) : generations.length === 0 && !historyError ? (
           <p className="supporting">
             No studio jobs yet. The offline demo library is provisioned
