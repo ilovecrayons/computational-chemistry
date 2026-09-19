@@ -57,13 +57,19 @@ beforeEach(() => {
         dob: "1998-01-01",
         bio: "A fictional adult profile.",
         location: "Brooklyn",
+        town: "Brooklyn",
+        matchLocation: "Brooklyn",
         gender: "man",
         photo: "/demo/person-1.svg",
+        photos: ["/demo/person-1.svg"],
+        favoriteMemes: [],
+        interests: [],
         intent: "relationship",
         preferences: {
           genders: ["woman", "man", "nonbinary"],
           minAge: 18,
           maxAge: 50,
+          radiusMiles: 25,
         },
         initialTags: ["absurd", "cursed", "deadpan"],
         complete: true,
@@ -166,7 +172,7 @@ test("mutual private gender and age preferences exclude otherwise compatible peo
   profile.saveProfile("close", {
     ...original,
     name: "Close",
-    preferences: { genders, minAge: 18, maxAge: 50 },
+    preferences: { genders, minAge: 18, maxAge: 50, radiusMiles: 25 },
   });
   assert.equal(
     engine.getCandidates("a").some((candidate) => candidate.id === "close"),

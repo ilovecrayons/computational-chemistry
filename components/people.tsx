@@ -34,6 +34,7 @@ import {
   SectionTitle,
   Tags,
 } from "./ui";
+import { useSwipe } from "./use-swipe";
 
 function Evidence({ compatibility }: { compatibility: Compatibility }) {
   return (
@@ -212,6 +213,7 @@ export function DiscoverScreen({
   const [busy, setBusy] = useState(false);
   const [matched, setMatched] = useState<Match | null>(null);
   const [notice, setNotice] = useState("");
+  const [photoIndex, setPhotoIndex] = useState(0);
   const reduced = useReducedMotion();
   const load = useCallback(() => {
     setError(null);
@@ -230,6 +232,7 @@ export function DiscoverScreen({
         { targetId, decision },
       );
       setCandidates((previous) => previous!.filter((c) => c.id !== targetId));
+      setPhotoIndex(0);
       if (data.match) setMatched(data.match);
       else
         setNotice(
@@ -244,73 +247,121 @@ export function DiscoverScreen({
     }
   }
   const candidate = candidates?.[0];
+  const photos = candidate?.photos?.length
+    ? candidate.photos
+    : candidate?.photo
+      ? [candidate.photo]
+      : [];
+  const swipe = useSwipe({
+    disabled: busy || !candidate,
+    onLeft: () => candidate && void decide(candidate.id, "pass"),
+    onRight: () => candidate && void decide(candidate.id, "like"),
+  });
+  useEffect(() => {
+    setPhotoIndex(0);
+  }, [candidate?.id]);
   return (
-    <>
-      <SectionTitle
-        eyebrow="Shared humor. Actual humans."
-        title="Your kind of weird."
-      />
-      <p className="screen-intro">
-        The internet is a lot. These people get your part of it.
-      </p>
+    <section className="tiktok-feed discover-feed">
       <ErrorNote error={error} />
       {error && (
         <button className="text-button" onClick={load}>
           Try again
         </button>
       )}
-      <p className="live-notice" aria-live="polite">
+      <p className="live-notice discover-notice" aria-live="polite">
         {notice}
       </p>
       {!candidates && !error ? (
         <Loading />
       ) : candidate ? (
-        <article className="candidate" key={candidate.id}>
-          <div className="candidate-photo">
-            <img
-              src={candidate.photo}
-              alt={`${candidate.name}'s illustrated profile portrait`}
-            />
-          </div>
-          <div className="candidate-content">
-            <div className="person-heading">
-              <div>
-                <h2>
-                  {candidate.name}, {candidate.age}
-                </h2>
-                <p>{candidate.location}</p>
+        <>
+          <div className="tiktok-stage discover-stage" {...swipe}>
+            <div className="discover-photos">
+              {photos.map((photo, index) => (
+                <img
+                  key={`${candidate.id}-${index}`}
+                  src={photo}
+                  alt=""
+                  className={index === photoIndex ? "active" : ""}
+                  hidden={index !== photoIndex}
+                />
+              ))}
+              {photos.length > 1 && (
+                <div className="photo-dots" aria-hidden>
+                  {photos.map((_, index) => (
+                    <span
+                      key={index}
+                      className={index === photoIndex ? "active" : ""}
+                    />
+                  ))}
+                </div>
+              )}
+              {photos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="photo-nav prev"
+                    aria-label="Previous photo"
+                    onClick={() =>
+                      setPhotoIndex(
+                        (value) => (value - 1 + photos.length) % photos.length,
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="photo-nav next"
+                    aria-label="Next photo"
+                    onClick={() =>
+                      setPhotoIndex((value) => (value + 1) % photos.length)
+                    }
+                  />
+                </>
+              )}
+            </div>
+            <div className="discover-overlay">
+              <div className="discover-heading">
+                <div>
+                  <h2>
+                    {candidate.name}, {candidate.age}
+                  </h2>
+                  <p>{candidate.town || candidate.location}</p>
+                </div>
+                <Safety targetId={candidate.id} onDone={load} />
               </div>
-              <Safety targetId={candidate.id} onDone={load} />
-            </div>
-            <p className="intent">
-              {candidate.intent === "relationship"
-                ? "Looking for a relationship"
-                : candidate.intent === "casual"
-                  ? "Keeping it casual"
-                  : "Figuring it out"}
-            </p>
-            <p className="bio">{candidate.bio}</p>
-            <Evidence compatibility={candidate.compatibility} />
-            <div className="profile-actions">
-              <button
-                className="button secondary"
-                disabled={busy}
-                onClick={() => void decide(candidate.id, "pass")}
-              >
-                <X size={20} />
-                Pass
-              </button>
-              <button
-                className="button primary"
-                disabled={busy}
-                onClick={() => void decide(candidate.id, "like")}
-              >
-                <Heart size={20} weight="fill" />
-                Like
-              </button>
+              {candidate.interests.length > 0 && (
+                <Tags tags={candidate.interests} />
+              )}
+              {candidate.humorTags.length > 0 && (
+                <div className="discover-tags">
+                  <span className="discover-tags-label">Humor</span>
+                  <Tags tags={candidate.humorTags} />
+                </div>
+              )}
+              {candidate.bio && <p className="discover-bio">{candidate.bio}</p>}
+              <Evidence compatibility={candidate.compatibility} />
             </div>
           </div>
-        </article>
+          <div className="tiktok-dock reaction-dock" aria-busy={busy}>
+            <button
+              className="reaction-pill nah"
+              disabled={busy}
+              onClick={() => void decide(candidate.id, "pass")}
+            >
+              <X size={22} weight="bold" aria-hidden />
+              <span>Pass</span>
+            </button>
+            <button
+              className="reaction-pill lol"
+              disabled={busy}
+              onClick={() => void decide(candidate.id, "like")}
+            >
+              <Heart size={22} weight="fill" aria-hidden />
+              <span>Like</span>
+            </button>
+          </div>
+          <p className="swipe-hint">Swipe ← pass · → like</p>
+        </>
       ) : (
         candidates && (
           <Empty
@@ -374,7 +425,7 @@ export function DiscoverScreen({
           </motion.div>
         </Dialog>
       )}
-    </>
+    </section>
   );
 }
 

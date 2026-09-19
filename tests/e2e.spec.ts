@@ -61,10 +61,12 @@ async function signInFreshDemo(page: Page, baseURL: string) {
 async function completeProfile(page: Page) {
   await page.getByLabel("Display name").fill("Alex");
   await page.getByLabel("Date of birth").fill("1999-04-12");
-  await page.getByLabel("Broad location").fill("Brooklyn");
+  await page.getByLabel(/^Town/).fill("Brooklyn");
+  await page.getByLabel(/^Match location/).fill("Brooklyn, NY");
   await page
-    .getByLabel("One thing about you")
+    .getByLabel("Anything else")
     .fill("I collect terrible work memes and excellent tiny snacks.");
+  await page.getByLabel("Interests").fill("memes, snacks");
   await page
     .getByRole("combobox", { name: "Gender", exact: true })
     .selectOption("nonbinary");
@@ -82,9 +84,7 @@ async function completeProfile(page: Page) {
   }
   await page.getByLabel("Minimum age").fill("18");
   await page.getByLabel("Maximum age").fill("45");
-  await page
-    .getByRole("button", { name: "Choose portrait 2", exact: true })
-    .click();
+  await page.getByLabel("Upload photos").setInputFiles("tests/fixture-photo.jpg");
   await page
     .getByRole("button", { name: "Next: your humor", exact: true })
     .click();
@@ -237,7 +237,7 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
     .getByRole("button", { name: "Find my people", exact: true })
     .click();
   await expect(
-    page.locator("article.candidate").getByRole("heading", { name: /^Jules,/ }),
+    page.locator(".discover-feed").getByRole("heading", { name: /^Jules,/ }),
   ).toBeVisible();
   const matched = page.waitForResponse(
     (response) =>
@@ -348,11 +348,11 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
     .getByRole("button", { name: "Memes", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "15 reactions", exact: true }),
+    page.getByRole("button", { name: "Open your tasteprint", exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "15 reactions", exact: true }),
+    page.getByRole("button", { name: "Open your tasteprint", exact: true }),
   ).toBeVisible();
   const nextFeed = await page.request.get("/api/feed");
   const feed = (await nextFeed.json()) as {
@@ -368,8 +368,9 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
     .click();
   await page.getByRole("button", { name: "Edit profile", exact: true }).click();
   await expect(page.getByLabel("Date of birth")).toHaveValue("1999-04-12");
-  await expect(page.getByLabel("Broad location")).toHaveValue("Brooklyn");
-  await expect(page.getByLabel("One thing about you")).toHaveValue(
+  await expect(page.getByLabel(/^Town/)).toHaveValue("Brooklyn");
+  await expect(page.getByLabel(/^Match location/)).toHaveValue("Brooklyn, NY");
+  await expect(page.getByLabel("Anything else")).toHaveValue(
     "I collect terrible work memes and excellent tiny snacks.",
   );
   await expect(
@@ -422,27 +423,30 @@ test("all product surfaces fit required widths and reset dialog keeps and restor
   await signInFreshDemo(page, baseURL!);
   await completeProfile(page);
   const destinations = [
-    { view: "memes", heading: "Funny to you?" },
-    { view: "taste", heading: "Your tasteprint." },
-    { view: "matches", heading: "Your kind of weird." },
-    { view: "chats", heading: "The conversation." },
-    { view: "me", heading: "Me, unfortunately." },
-    { view: "admin", heading: "The meme studio." },
+    { view: "memes", heading: "Your tasteprint." , openTaste: false },
+    { view: "taste", heading: "Your tasteprint.", openTaste: false },
+    { view: "matches", heading: null, openTaste: false },
+    { view: "chats", heading: "The conversation.", openTaste: false },
+    { view: "me", heading: "Me, unfortunately.", openTaste: false },
+    { view: "admin", heading: "The meme studio.", openTaste: false },
   ];
   for (const width of [320, 390, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const { view, heading } of destinations) {
       await page.goto(`/?view=${view}`);
-      await expect(
-        page.getByRole("heading", { name: heading, exact: true }),
-      ).toBeVisible();
-      await expect(page.getByRole("navigation")).toBeVisible();
-      if (view === "memes")
+      if (view === "memes") {
+        await expect(page.locator(".meme-feed")).toBeVisible();
         await expect(
           page.getByRole("button", { name: "LOL", exact: true }),
         ).toBeEnabled();
-      if (view === "matches")
-        await expect(page.locator("article.candidate")).toBeVisible();
+      } else if (view === "matches") {
+        await expect(page.locator(".discover-feed")).toBeVisible();
+      } else {
+        await expect(
+          page.getByRole("heading", { name: heading!, exact: true }),
+        ).toBeVisible();
+      }
+      await expect(page.getByRole("navigation")).toBeVisible();
       await expectNoOverflow(page);
     }
     await page

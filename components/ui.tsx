@@ -206,9 +206,11 @@ export function Dialog({
 export function MemeMedia({
   meme,
   compact = false,
+  fill = false,
 }: {
   meme: Meme;
   compact?: boolean;
+  fill?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
@@ -249,7 +251,7 @@ export function MemeMedia({
   const video = meme.type === "video" && !compact && !failed;
   return (
     <div
-      className={`meme-media ${compact ? "compact" : ""} ${video ? "video-media" : ""}`}
+      className={`meme-media ${compact ? "compact" : ""} ${fill ? "fill" : ""} ${video ? "video-media" : ""}`}
     >
       {failed ? (
         <>
@@ -278,41 +280,43 @@ export function MemeMedia({
             onPause={() => setPlaying(false)}
             aria-label={meme.caption}
           />
-          <div className="media-controls">
-            <button
-              type="button"
-              onClick={() => {
-                if (playing) {
-                  setPausedByUser(true);
-                  videoRef.current?.pause();
-                } else {
-                  setPausedByUser(false);
-                  void videoRef.current
-                    ?.play()
-                    .catch(() =>
-                      setPlayError("Playback did not start. Try again."),
-                    );
-                }
-              }}
-              aria-label={playing ? "Pause video" : "Play video"}
-            >
-              {playing ? (
-                <Pause size={16} weight="fill" />
-              ) : (
-                <Play size={16} weight="fill" />
-              )}
-              <span>{playing ? "Pause" : "Play"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMuted((value) => !value)}
-              aria-label={muted ? "Turn sound on" : "Mute video"}
-              aria-pressed={!muted}
-            >
-              {muted ? <SpeakerSlash size={16} /> : <SpeakerHigh size={16} />}
-              <span>{muted ? "Sound off" : "Sound on"}</span>
-            </button>
-          </div>
+          {!fill && (
+            <div className="media-controls">
+              <button
+                type="button"
+                onClick={() => {
+                  if (playing) {
+                    setPausedByUser(true);
+                    videoRef.current?.pause();
+                  } else {
+                    setPausedByUser(false);
+                    void videoRef.current
+                      ?.play()
+                      .catch(() =>
+                        setPlayError("Playback did not start. Try again."),
+                      );
+                  }
+                }}
+                aria-label={playing ? "Pause video" : "Play video"}
+              >
+                {playing ? (
+                  <Pause size={16} weight="fill" />
+                ) : (
+                  <Play size={16} weight="fill" />
+                )}
+                <span>{playing ? "Pause" : "Play"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMuted((value) => !value)}
+                aria-label={muted ? "Turn sound on" : "Mute video"}
+                aria-pressed={!muted}
+              >
+                {muted ? <SpeakerSlash size={16} /> : <SpeakerHigh size={16} />}
+                <span>{muted ? "Sound off" : "Sound on"}</span>
+              </button>
+            </div>
+          )}
           {playError && (
             <span className="media-status" role="alert">
               {playError}

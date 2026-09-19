@@ -201,6 +201,7 @@ export async function seedDemo(): Promise<void> {
         genders: person.genders as Gender[],
         minAge: 21,
         maxAge: 38,
+        radiusMiles: 25,
       };
       const profile = {
         userId: person.id,
@@ -208,8 +209,13 @@ export async function seedDemo(): Promise<void> {
         dob: person.dob,
         bio: person.bio,
         location: "Brooklyn, NY",
+        town: "Brooklyn",
+        matchLocation: "Brooklyn, NY",
         gender: person.gender as Gender,
         photo: person.photo,
+        photos: [person.photo],
+        favoriteMemes: [],
+        interests: person.favorites.slice(0, 3),
         intent: person.intent as Intent,
         preferences,
         initialTags: ["absurd", "deadpan", "cursed"],

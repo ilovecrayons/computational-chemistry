@@ -92,8 +92,22 @@ export const profiles = sqliteTable("profiles", {
   dob: text("dob").notNull(),
   bio: text("bio").notNull(),
   location: text("location").notNull(),
+  town: text("town").notNull().default(""),
+  matchLocation: text("match_location").notNull().default(""),
   gender: text("gender").$type<Gender>().notNull(),
   photo: text("photo").notNull(),
+  photos: text("photos", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default([]),
+  favoriteMemes: text("favorite_memes", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default([]),
+  interests: text("interests", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default([]),
   intent: text("intent").$type<Intent>().notNull(),
   preferences: text("preferences", { mode: "json" })
     .$type<Preferences>()
