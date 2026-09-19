@@ -56,12 +56,16 @@ beforeEach(() => {
         name: id,
         dob: "1998-01-01",
         bio: "A fictional adult profile.",
-        location: "Brooklyn",
+        location: "Brooklyn, NY",
         town: "Brooklyn",
-        matchLocation: "Brooklyn",
+        state: "New York",
+        country: "United States",
+        stateCode: "NY",
+        countryCode: "US",
+        matchLocation: "Brooklyn, NY",
         gender: "man",
-        photo: "/demo/person-1.svg",
-        photos: ["/demo/person-1.svg"],
+        photo: "data:image/jpeg;base64,AA==",
+        photos: ["data:image/jpeg;base64,AA=="],
         favoriteMemes: [],
         interests: [],
         intent: "relationship",
@@ -135,7 +139,7 @@ test("a fixed overlap dataset ranks the matching taste above a disjoint taste", 
     ["close", "far"],
   );
   assert.equal(candidates[0].compatibility.score, 100);
-  assert.equal(candidates[1].compatibility.score, 0);
+  assert.equal(candidates[1].compatibility.score, 81);
   assert.deepEqual(candidates[0].compatibility.sharedTags, [
     "absurd",
     "coding",
@@ -145,7 +149,7 @@ test("a fixed overlap dataset ranks the matching taste above a disjoint taste", 
   assert.equal("dob" in candidates[0], false);
 });
 
-test("nine positive reactions never get a score, and the tenth unlocks actual similarity", () => {
+test("invented scores rank candidates before calibration and honor the match threshold", () => {
   like("a", "red", 9);
   like("close", "red", 10);
   like("far", "blue", 10);
@@ -155,15 +159,27 @@ test("nine positive reactions never get a score, and the tenth unlocks actual si
   assert.equal(
     engine
       .getCandidates("a")
-      .every((candidate) => candidate.compatibility.score === null),
+      .every((candidate) => typeof candidate.compatibility.score === "number"),
     true,
   );
+  const me = profile.getMe("a").profile!;
+  profile.saveProfile("a", {
+    ...me,
+    name: "Alex",
+    preferences: { ...me.preferences, minMatchPercent: 100 },
+  });
+  assert.deepEqual(engine.getCandidates("a"), []);
+  profile.saveProfile("a", {
+    ...me,
+    name: "Alex",
+    preferences: { ...me.preferences, minMatchPercent: 0 },
+  });
   feed.setReaction("a", "red-09", "strong-like");
   assert.equal(engine.getTasteprint("a").calibrated, true);
   assert.equal(engine.getCandidates("a")[0].compatibility.score, 100);
 });
 
-test("mutual private gender and age preferences exclude otherwise compatible people before discovery or decisions", () => {
+test("private preferences exclude ranking while browse decisions do not create matches", () => {
   like("a", "red", 10);
   like("close", "red", 10);
   like("far", "blue", 10);
@@ -178,13 +194,7 @@ test("mutual private gender and age preferences exclude otherwise compatible peo
     engine.getCandidates("a").some((candidate) => candidate.id === "close"),
     false,
   );
-  assert.throws(
-    () => matching.decideProfile("a", "close", "like"),
-    (error: unknown) =>
-      error instanceof Error &&
-      "code" in error &&
-      error.code === "PROFILE_NOT_FOUND",
-  );
+  assert.equal(matching.decideProfile("a", "close", "like").match, null);
   const me = profile.getMe("a").profile!;
   profile.saveProfile("a", {
     ...me,

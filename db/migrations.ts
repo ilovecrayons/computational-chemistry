@@ -32,6 +32,21 @@ ALTER TABLE profiles ADD COLUMN interests TEXT NOT NULL DEFAULT '[]';
 UPDATE profiles SET town = location, match_location = location WHERE town = '' AND location <> '';
 UPDATE profiles SET photos = json_array(photo) WHERE photos = '[]' AND photo <> '';
 `;
+const socialV3 = `
+CREATE TABLE post_comments (id TEXT PRIMARY KEY NOT NULL, meme_id TEXT NOT NULL REFERENCES memes(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, body TEXT NOT NULL, created_at INTEGER NOT NULL);
+CREATE INDEX post_comments_meme_idx ON post_comments(meme_id);
+CREATE TABLE saved_memes (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, meme_id TEXT NOT NULL REFERENCES memes(id) ON DELETE CASCADE, created_at INTEGER NOT NULL, PRIMARY KEY(user_id,meme_id));
+CREATE TABLE notifications (id TEXT PRIMARY KEY NOT NULL, recipient_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, actor_id TEXT REFERENCES users(id) ON DELETE SET NULL, type TEXT NOT NULL CHECK(type IN ('match','message','like','comment')), message TEXT NOT NULL, meme_id TEXT REFERENCES memes(id) ON DELETE CASCADE, match_id TEXT REFERENCES matches(id) ON DELETE CASCADE, created_at INTEGER NOT NULL, read_at INTEGER);
+CREATE INDEX notifications_recipient_idx ON notifications(recipient_id,created_at);
+`;
+const profileV4 = `
+ALTER TABLE profiles ADD COLUMN state TEXT NOT NULL DEFAULT '';
+ALTER TABLE profiles ADD COLUMN country TEXT NOT NULL DEFAULT '';
+ALTER TABLE profiles ADD COLUMN state_code TEXT NOT NULL DEFAULT '';
+ALTER TABLE profiles ADD COLUMN country_code TEXT NOT NULL DEFAULT 'US';
+UPDATE profiles SET state = CASE WHEN instr(location, ',') > 0 THEN trim(substr(location, instr(location, ',') + 1)) ELSE '' END WHERE state = '';
+UPDATE profiles SET country = 'United States' WHERE country = '';
+`;
 
 export function migrate(database: Database.Database) {
   database.exec(
@@ -67,6 +82,32 @@ export function migrate(database: Database.Database) {
       database
         .prepare(
           "INSERT INTO schema_migrations(version,applied_at) VALUES(2,?)",
+        )
+        .run(Date.now());
+    }
+    if (
+      !database
+        .prepare("SELECT version FROM schema_migrations WHERE version = 3")
+        .get()
+    ) {
+      database.exec(socialV3);
+      database
+        .prepare(
+          "INSERT INTO schema_migrations(version,applied_at) VALUES(3,?)",
+        )
+        .run(Date.now());
+    }
+    if (
+      !database
+        .prepare("SELECT version FROM schema_migrations WHERE version = 4")
+        .get()
+    ) {
+      for (const statement of profileV4.trim().split(";\n")) {
+        if (statement.trim()) database.exec(`${statement.trim()};`);
+      }
+      database
+        .prepare(
+          "INSERT INTO schema_migrations(version,applied_at) VALUES(4,?)",
         )
         .run(Date.now());
     }

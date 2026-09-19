@@ -1,4 +1,4 @@
-# Computational Chemistry: UI and Styling Guidelines
+# Crackd: UI and Styling Guidelines
 
 ## 1. Design Read
 
@@ -28,7 +28,7 @@ Find someone who laughs at the same garbage.
 
 ### Naming
 
-Product name: **Computational Chemistry**
+Product name: **Crackd**
 
 Use this product name consistently in the interface, metadata, and documentation.
 

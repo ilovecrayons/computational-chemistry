@@ -38,7 +38,7 @@ export async function requireAdmin(request: Request): Promise<{ id: string }> {
     throw new ApiFailure(
       403,
       "FORBIDDEN",
-      "Generation and demo controls are restricted to an administrator.",
+      "Admin-only generation is restricted.",
     );
   }
   return user;

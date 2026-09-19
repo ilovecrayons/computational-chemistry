@@ -61,10 +61,15 @@ async function signInFreshDemo(page: Page, baseURL: string) {
 async function completeProfile(page: Page) {
   await page.getByLabel("Display name").fill("Alex");
   await page.getByLabel("Date of birth").fill("1999-04-12");
-  await page.getByLabel(/^Town/).fill("Brooklyn");
-  await page.getByLabel(/^Match location/).fill("Brooklyn, NY");
   await page
-    .getByLabel("Anything else")
+    .getByRole("combobox", { name: /^Country/ })
+    .selectOption("US");
+  await page
+    .getByRole("combobox", { name: /^State or province/ })
+    .selectOption("NY");
+  await page.getByLabel(/^Town/).fill("Brooklyn");
+  await page
+    .getByLabel("Bio")
     .fill("I collect terrible work memes and excellent tiny snacks.");
   await page.getByLabel("Interests").fill("memes, snacks");
   await page
@@ -84,7 +89,7 @@ async function completeProfile(page: Page) {
   }
   await page.getByLabel("Minimum age").fill("18");
   await page.getByLabel("Maximum age").fill("45");
-  await page.getByLabel("Upload photos").setInputFiles("tests/fixture-photo.jpg");
+  await page.getByLabel("Choose files").setInputFiles("tests/fixture-photo.jpg");
   await page
     .getByRole("button", { name: "Next: your humor", exact: true })
     .click();
@@ -109,7 +114,7 @@ async function completeProfile(page: Page) {
   await expect(tags.getByRole("button", { pressed: true })).toHaveCount(3);
   await page.getByRole("button", { name: "Judge memes", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "LOL", exact: true }),
+    page.getByRole("button", { name: /Like this meme/ }),
   ).toBeEnabled();
 }
 
@@ -127,7 +132,7 @@ async function expectNoOverflow(page: Page) {
     .toBeLessThanOrEqual(1);
 }
 
-test("real reactions create explainable Jules match, an explicitly sent meme opener, and durable reset-safe media", async ({
+test("real reactions create an explainable match and durable media", async ({
   page,
   baseURL,
 }) => {
@@ -140,7 +145,7 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
 
   for (let index = 0; index < 15; index += 1) {
     await expect(
-      page.getByRole("button", { name: "LOL", exact: true }),
+      page.getByRole("button", { name: /Like this meme/ }),
     ).toBeEnabled();
     await expect(page.locator(".meme-frame")).toHaveCount(1);
     const video = page.locator(".meme-frame video");
@@ -187,7 +192,7 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
         new URL(response.url()).pathname === "/api/reactions" &&
         response.request().method() === "POST",
     );
-    await page.getByRole("button", { name: "LOL", exact: true }).click();
+    await page.getByRole("button", { name: /Like this meme/ }).click();
     const response = await saved;
     expect(response.ok(), await response.text()).toBeTruthy();
     const reaction = (await response.json()) as {
@@ -205,12 +210,6 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
   }
   expect([...mediaTypes].sort()).toEqual(["image", "video"]);
 
-  await page
-    .getByRole("button", { name: "Open your tasteprint", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Your tasteprint.", exact: true }),
-  ).toBeVisible();
   const tasteResponse = await page.request.get("/api/tasteprint");
   expect(tasteResponse.ok()).toBeTruthy();
   const taste = (await tasteResponse.json()) as Tasteprint;
@@ -218,37 +217,23 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
   expect(taste.positiveCount).toBe(15);
   expect(taste.calibrated).toBe(true);
   for (const item of taste.tags) expect(reactedTags.has(item.tag)).toBe(true);
-  await expect(page.locator(".taste-row h3")).toHaveText(
-    taste.tags.slice(0, 3).map((item) => item.tag),
-  );
-  await expect(
-    page.getByRole("heading", { name: taste.summary, exact: true }),
-  ).toBeVisible();
-  if (taste.tags.length > 3) {
-    await page
-      .getByRole("button", { name: "Show all tags", exact: true })
-      .click();
-    await expect(page.locator(".settings-section .tags span")).toHaveText(
-      taste.tags.slice(3).map((item) => item.tag),
-    );
-  }
 
   await page
     .getByRole("button", { name: "Find my people", exact: true })
     .click();
   await expect(
-    page.locator(".discover-feed").getByRole("heading", { name: /^Jules,/ }),
+    page.locator(".discover-feed").getByRole("heading", { name: /^Jules Bennett,/ }),
   ).toBeVisible();
   const matched = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname === "/api/profile-decisions" &&
       response.request().method() === "POST",
   );
-  await page.getByRole("button", { name: "Like", exact: true }).click();
+  await page.getByRole("button", { name: "Match", exact: true }).click();
   const matchResponse = await matched;
   expect(matchResponse.ok()).toBeTruthy();
   const { match } = (await matchResponse.json()) as { match: Match };
-  expect(match.profile.name).toBe("Jules");
+  expect(match.profile.name).toBe("Jules Bennett");
   expect(match.compatibility.sharedMemes[0]).toBeDefined();
   const reveal = page.getByRole("dialog", {
     name: "It’s mutual.",
@@ -259,10 +244,10 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
     reveal.getByRole("heading", { name: "Same damage. Mutual interest." }),
   ).toBeVisible();
   await expect(
-    reveal.getByRole("img", { name: "Alex", exact: true }),
+    reveal.getByRole("img", { name: "Alex Morgan", exact: true }),
   ).toBeVisible();
   await expect(
-    reveal.getByRole("img", { name: "Jules", exact: true }),
+    reveal.getByRole("img", { name: "Jules Bennett", exact: true }),
   ).toBeVisible();
   await expect
     .poll(() =>
@@ -280,7 +265,7 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
     .click();
 
   await expect(
-    page.getByRole("heading", { name: "Jules", exact: true }),
+    page.getByRole("heading", { name: "Jules Bennett", exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel("Message", { exact: true })).toHaveValue("");
   const messagesPath = `/api/matches/${match.id}/messages`;
@@ -345,15 +330,9 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
   );
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Memes", exact: true })
+    .getByRole("button", { name: "Home", exact: true })
     .click();
-  await expect(
-    page.getByRole("button", { name: "Open your tasteprint", exact: true }),
-  ).toBeVisible();
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "Open your tasteprint", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Like this meme/ })).toBeVisible();
   const nextFeed = await page.request.get("/api/feed");
   const feed = (await nextFeed.json()) as {
     memes: Meme[];
@@ -364,46 +343,15 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
 
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Me", exact: true })
+    .getByRole("button", { name: "Profile", exact: true })
     .click();
   await page.getByRole("button", { name: "Edit profile", exact: true }).click();
   await expect(page.getByLabel("Date of birth")).toHaveValue("1999-04-12");
   await expect(page.getByLabel(/^Town/)).toHaveValue("Brooklyn");
-  await expect(page.getByLabel(/^Match location/)).toHaveValue("Brooklyn, NY");
-  await expect(page.getByLabel("Anything else")).toHaveValue(
+  await expect(page.getByLabel("Bio")).toHaveValue(
     "I collect terrible work memes and excellent tiny snacks.",
   );
-  await expect(
-    page
-      .getByRole("group", { name: "Three starting humor tags", exact: true })
-      .getByRole("button", { pressed: true }),
-  ).toHaveText(startingTags);
   await page.getByRole("button", { name: "Back to me", exact: true }).click();
-  await page.getByRole("button", { name: "Reset demo", exact: true }).click();
-  const resetDialog = page.getByRole("dialog", {
-    name: "Reset the demo?",
-    exact: true,
-  });
-  await resetDialog
-    .getByRole("button", { name: "Reset demo", exact: true })
-    .click();
-  await expect(page.getByLabel("Display name")).toBeVisible();
-  const restoredProfile = await page.request.get("/api/profile");
-  expect(restoredProfile.ok()).toBeTruthy();
-  expect(((await restoredProfile.json()) as Me).profile?.complete).toBe(false);
-  // Reset restores onboarding; finish the adult gate before reading protected taste/match APIs.
-  await completeProfile(page);
-  const restoredTaste = await page.request.get("/api/tasteprint");
-  expect(await restoredTaste.json()).toMatchObject({
-    reactionCount: 0,
-    positiveCount: 0,
-    calibrated: false,
-    tags: [],
-  });
-  const restoredMatches = await page.request.get("/api/matches");
-  expect(
-    ((await restoredMatches.json()) as { matches: Match[] }).matches,
-  ).toEqual([]);
   for (const [src, hash] of preservedAssets) {
     const asset = await page.request.get(src);
     expect(asset.ok()).toBeTruthy();
@@ -415,20 +363,19 @@ test("real reactions create explainable Jules match, an explicitly sent meme ope
   }
 });
 
-test("all product surfaces fit required widths and reset dialog keeps and restores keyboard focus", async ({
-  page,
-  baseURL,
-}) => {
+test("all product surfaces fit required widths", async ({ page, baseURL }) => {
   test.setTimeout(180_000);
   await signInFreshDemo(page, baseURL!);
   await completeProfile(page);
   const destinations = [
-    { view: "memes", heading: "Your tasteprint." , openTaste: false },
-    { view: "taste", heading: "Your tasteprint.", openTaste: false },
-    { view: "matches", heading: null, openTaste: false },
-    { view: "chats", heading: "The conversation.", openTaste: false },
-    { view: "me", heading: "Me, unfortunately.", openTaste: false },
-    { view: "admin", heading: "The meme studio.", openTaste: false },
+    { view: "memes", heading: null },
+    { view: "matches", heading: null },
+    { view: "post", heading: "Share a meme." },
+    { view: "notifications", heading: "Notifications." },
+    { view: "saved", heading: "Saved posts" },
+    { view: "chats", heading: "The conversation." },
+    { view: "me", heading: "Your profile" },
+    { view: "admin", heading: "The meme studio." },
   ];
   for (const width of [320, 390, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
@@ -437,7 +384,7 @@ test("all product surfaces fit required widths and reset dialog keeps and restor
       if (view === "memes") {
         await expect(page.locator(".meme-feed")).toBeVisible();
         await expect(
-          page.getByRole("button", { name: "LOL", exact: true }),
+          page.getByRole("button", { name: /Like this meme/ }),
         ).toBeEnabled();
       } else if (view === "matches") {
         await expect(page.locator(".discover-feed")).toBeVisible();
@@ -449,43 +396,5 @@ test("all product surfaces fit required widths and reset dialog keeps and restor
       await expect(page.getByRole("navigation")).toBeVisible();
       await expectNoOverflow(page);
     }
-    await page
-      .getByRole("navigation")
-      .getByRole("button", { name: "Me", exact: true })
-      .click();
-    const resetButton = page.getByRole("button", {
-      name: "Reset demo",
-      exact: true,
-    });
-    await resetButton.click();
-    const dialog = page.getByRole("dialog", {
-      name: "Reset the demo?",
-      exact: true,
-    });
-    await expect(dialog).toBeVisible();
-    await expect
-      .poll(() =>
-        dialog.evaluate((element) => element.contains(document.activeElement)),
-      )
-      .toBe(true);
-    const bounds = await dialog.boundingBox();
-    expect(bounds).not.toBeNull();
-    expect(bounds!.x).toBeGreaterThanOrEqual(0);
-    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);
-    for (let press = 0; press < 5; press += 1) {
-      await page.keyboard.press("Tab");
-      await expect
-        .poll(() =>
-          dialog.evaluate((element) =>
-            element.contains(document.activeElement),
-          ),
-        )
-        .toBe(true);
-    }
-    await page.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
-    await expect(resetButton).toBeFocused();
-    await expectNoOverflow(page);
   }
-  // This test does not submit studio jobs: an E2E run must never spend provider credits.
 });

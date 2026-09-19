@@ -98,6 +98,47 @@ export function Tags({ tags }: { tags: string[] }) {
     </div>
   );
 }
+export function ProfileVisual({
+  name,
+  label,
+  src,
+  className = "",
+}: {
+  name: string;
+  label?: string;
+  src?: string | null;
+  className?: string;
+}) {
+  const accessibleLabel = label ?? `${name}'s profile`;
+  const [failed, setFailed] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const temporary = !src || src.startsWith("/demo/");
+  useEffect(() => {
+    setFailed(false);
+    if (temporary || !src) return;
+    const timer = setTimeout(() => {
+      const image = imageRef.current;
+      if (image?.complete && image.naturalWidth === 0) setFailed(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [src, temporary]);
+  return temporary || failed ? (
+    <span
+      className={`profile-visual ${className}`}
+      aria-label={accessibleLabel}
+    >
+      {name.trim().slice(0, 1).toUpperCase()}
+    </span>
+  ) : (
+    <img
+      className={`profile-visual ${className}`}
+      ref={imageRef}
+      src={src}
+      alt={accessibleLabel}
+      onError={() => setFailed(true)}
+    />
+  );
+}
 export function Dialog({
   title,
   onClose,

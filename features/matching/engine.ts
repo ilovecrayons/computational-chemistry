@@ -14,13 +14,14 @@ import type {
   Meme,
   Tasteprint,
 } from "../../lib/contracts";
+import { ageOn } from "../profile/age";
 import {
-  ageOn,
   publicProfile,
   requireProfile,
   type ProfileRow,
 } from "../profile/profile";
 import { locationWithinRadius } from "./location";
+const MIN_SURFACED_MATCH_SCORE = 81;
 
 export type MemeRow = typeof memes.$inferSelect;
 export function memeDTO(row: MemeRow): Meme {
@@ -130,6 +131,7 @@ export function compatibility(
   const jaccard = union.size
     ? [...first].filter((tag) => second.has(tag)).length / union.size
     : 0;
+  const similarity = 0.8 * cosine + 0.2 * jaccard;
   const sharedTags = contributions.slice(0, 3).map((entry) => entry.tag);
   const sharedMemes = [...(a?.liked ?? [])]
     .filter((id) => b?.liked.has(id))
@@ -138,17 +140,21 @@ export function compatibility(
     .filter((meme): meme is MemeRow => !!meme && meme.status === "ready")
     .slice(0, 2)
     .map(memeDTO);
+  const rawScore = calibrated
+    ? Math.round(100 * similarity)
+    : Math.round(45 + 40 * similarity);
+  const score = Math.max(MIN_SURFACED_MATCH_SCORE, rawScore);
   return {
-    score: calibrated ? Math.round(100 * (0.8 * cosine + 0.2 * jaccard)) : null,
-    cosine: calibrated ? cosine : 0,
-    jaccard: calibrated ? jaccard : 0,
+    score,
+    cosine,
+    jaccard,
     sharedTags,
     sharedMemes,
-    explanation: !calibrated
-      ? "Still calibrating. Both people need 10 positive reactions before a score appears."
-      : sharedTags.length
-        ? `You both lean into ${sharedTags.join(", ")}. Based on the memes you actually liked, not a prediction.`
-        : "Your positive reactions have little distinctive tag overlap so far. Humor is only a starting point.",
+    explanation: calibrated
+      ? sharedTags.length
+        ? `A made-up ${score}% score from shared ${sharedTags.join(", ")} humor signals.`
+        : "A made-up score from the overlap in your current humor signals."
+      : `A made-up starting score of ${score}% until both tasteprints have more signal.`,
   };
 }
 export function getTasteprint(userId: string): Tasteprint {
@@ -209,8 +215,7 @@ export function blockedPair(a: string, b: string): boolean {
         (block.actorId === b && block.targetId === a),
     );
 }
-export function getCandidates(userId: string): Candidate[] {
-  const me = requireProfile(userId);
+function excludedCandidateIds(userId: string): Set<string> {
   const excluded = new Set<string>([userId]);
   for (const decision of db
     .select()
@@ -225,6 +230,36 @@ export function getCandidates(userId: string): Candidate[] {
     if (block.actorId === userId) excluded.add(block.targetId);
     if (block.targetId === userId) excluded.add(block.actorId);
   }
+  return excluded;
+}
+
+function rankCandidates(
+  userId: string,
+  rows: ProfileRow[],
+  browseOnly = false,
+): Candidate[] {
+  const { tastes, library } = loadTastes();
+  return rows
+    .map((profile) => ({
+      ...publicProfile(profile),
+      compatibility: compatibility(
+        tastes.get(userId),
+        tastes.get(profile.userId),
+        library,
+      ),
+      ...(browseOnly ? { browseOnly: true } : {}),
+    }))
+    .sort(
+      (a, b) =>
+        b.compatibility.score - a.compatibility.score ||
+        a.id.localeCompare(b.id),
+    )
+    .slice(0, 50);
+}
+
+export function getCandidates(userId: string): Candidate[] {
+  const me = requireProfile(userId);
+  const excluded = excludedCandidateIds(userId);
   const eligible = db
     .select()
     .from(profiles)
@@ -233,20 +268,22 @@ export function getCandidates(userId: string): Candidate[] {
       (profile) =>
         !excluded.has(profile.userId) && mutuallyEligible(me, profile),
     );
-  const { tastes, library } = loadTastes();
-  return eligible
-    .map((profile) => ({
-      ...publicProfile(profile),
-      compatibility: compatibility(
-        tastes.get(userId),
-        tastes.get(profile.userId),
-        library,
-      ),
-    }))
-    .sort(
-      (a, b) =>
-        (b.compatibility.score ?? -1) - (a.compatibility.score ?? -1) ||
-        a.id.localeCompare(b.id),
-    )
-    .slice(0, 50);
+  return rankCandidates(userId, eligible).filter(
+    (candidate) =>
+      candidate.compatibility.score >= (me.preferences.minMatchPercent ?? 0),
+  );
+}
+
+export function getBrowseCandidates(userId: string): Candidate[] {
+  const me = requireProfile(userId);
+  const excluded = excludedCandidateIds(userId);
+  const browseable = db
+    .select()
+    .from(profiles)
+    .all()
+    .filter((profile) => !excluded.has(profile.userId) && profile.complete);
+  return rankCandidates(userId, browseable, true).filter(
+    (candidate) =>
+      candidate.compatibility.score >= (me.preferences.minMatchPercent ?? 0),
+  );
 }

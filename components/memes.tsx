@@ -1,33 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
-  ChartBar,
-  Heart,
-  Smiley,
-  X,
   ArrowRight,
-  Sparkle,
+  BookmarkSimple,
+  ChatCircle,
+  Heart,
+  ShareNetwork,
 } from "@phosphor-icons/react";
-import type { Meme, Reaction, Tasteprint } from "@/lib/contracts";
+import type { FeedComment, Meme, Reaction } from "@/lib/contracts";
 import { useSwipe } from "./use-swipe";
 import {
   api,
+  Dialog,
   Empty,
   ErrorNote,
   Loading,
   MemeMedia,
   SectionTitle,
-  Tags,
 } from "./ui";
 
-export function FeedScreen({ onTaste }: { onTaste: () => void }) {
+export function FeedScreen({
+  onViewProfile,
+}: {
+  onViewProfile: (profileId: string) => void;
+}) {
   const [memes, setMemes] = useState<Meme[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [comments, setComments] = useState<FeedComment[] | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [commentsBusy, setCommentsBusy] = useState(false);
   const reduced = useReducedMotion();
   const load = useCallback(async (next?: string | null) => {
     setLoading(true);
@@ -70,21 +76,91 @@ export function FeedScreen({ onTaste }: { onTaste: () => void }) {
       setBusy(false);
     }
   }
+  function haptic() {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator)
+      navigator.vibrate(10);
+  }
+  async function openComments() {
+    const current = memes[0];
+    if (!current) return;
+    haptic();
+    setComments([]);
+    setCommentsBusy(true);
+    try {
+      setComments(
+        await api<FeedComment[]>(`/api/posts/${current.id}/comments`),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setCommentsBusy(false);
+    }
+  }
+  async function addComment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const current = memes[0];
+    if (!current || commentsBusy || !commentText.trim()) return;
+    setCommentsBusy(true);
+    try {
+      const comment = await api<FeedComment>(
+        `/api/posts/${current.id}/comments`,
+        { body: commentText },
+      );
+      setComments((previous) => [...(previous ?? []), comment]);
+      setCommentText("");
+      setMemes((previous) =>
+        previous.map((item, index) =>
+          index === 0
+            ? { ...item, commentCount: (item.commentCount ?? 0) + 1 }
+            : item,
+        ),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setCommentsBusy(false);
+    }
+  }
+  async function saveCurrent() {
+    const current = memes[0];
+    if (!current || busy) return;
+    haptic();
+    try {
+      const result = await api<{ saved: boolean }>(
+        `/api/posts/${current.id}/save`,
+        {},
+      );
+      setMemes((previous) =>
+        previous.map((item, index) =>
+          index === 0 ? { ...item, saved: result.saved } : item,
+        ),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function shareCurrent() {
+    const current = memes[0];
+    if (!current) return;
+    haptic();
+    const url = `${window.location.origin}/?view=memes&post=${encodeURIComponent(current.id)}`;
+    try {
+      if (navigator.share) await navigator.share({ title: "A meme", url });
+      else await navigator.clipboard.writeText(url);
+    } catch {
+      setError("Could not share this video.");
+    }
+  }
   const swipe = useSwipe({
     disabled: busy || !memes[0],
     onLeft: () => void react("pass"),
     onRight: () => void react("like"),
     onUp: () => void react("strong-like"),
+    onDown: () => void react("pass"),
   });
   return (
-    <section className="tiktok-feed meme-feed">
-      <button
-        className="feed-floating-button"
-        aria-label="Open your tasteprint"
-        onClick={onTaste}
-      >
-        <ChartBar size={22} weight="bold" />
-      </button>
+    <>
+      <section className="tiktok-feed meme-feed">
       <ErrorNote error={error} />
       {error && !memes.length && (
         <button className="button secondary full" onClick={() => void load()}>
@@ -98,60 +174,95 @@ export function FeedScreen({ onTaste }: { onTaste: () => void }) {
           aria-label="Loading memes"
         />
       ) : memes[0] ? (
-        <>
-          <div
-            className="tiktok-stage meme-stage"
-            aria-busy={busy}
-            {...swipe}
-          >
-            <AnimatePresence initial={false} mode="popLayout">
-              <motion.div
-                className="tiktok-card meme-frame"
-                key={memes[0].id}
-                initial={{ opacity: 0, scale: reduced ? 1 : 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: reduced ? 1 : 0.96 }}
-                transition={{ duration: reduced ? 0.08 : 0.18 }}
-              >
-                <MemeMedia meme={memes[0]} fill />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <div className="tiktok-dock reaction-dock" aria-busy={busy}>
-            <button
-              className="reaction-pill nah"
-              disabled={busy}
-              onClick={() => void react("pass")}
+        <div
+          className="tiktok-stage meme-stage"
+          aria-busy={busy}
+          {...swipe}
+        >
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.div
+              className="tiktok-card meme-frame"
+              key={memes[0].id}
+              initial={{ opacity: 0, scale: reduced ? 1 : 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: reduced ? 1 : 0.96 }}
+              transition={{ duration: reduced ? 0.08 : 0.18 }}
             >
-              <X size={22} weight="bold" aria-hidden />
-              <span>Nah</span>
-            </button>
-            <button
-              className="reaction-pill lol"
-              disabled={busy}
-              onClick={() => void react("like")}
-            >
-              <Smiley size={28} weight="bold" aria-hidden />
-              <span>LOL</span>
-            </button>
-            <button
-              className="reaction-pill strong"
-              disabled={busy}
-              onClick={() => void react("strong-like")}
-            >
-              <Heart size={22} weight="fill" aria-hidden />
-              <span>Too good</span>
-            </button>
-          </div>
-          <p className="swipe-hint">Swipe ← pass · → like · ↑ too good</p>
-        </>
+              <MemeMedia meme={memes[0]} fill />
+              <div className="meme-fyp-copy">
+                {memes[0].author ? (
+                  <button
+                    type="button"
+                    className="meme-fyp-author"
+                    onClick={() => onViewProfile(memes[0].author!.id)}
+                  >
+                    {memes[0].author.name}
+                  </button>
+                ) : null}
+                <p className="meme-fyp-caption">{memes[0].caption}</p>
+              </div>
+              <div className="meme-action-rail" aria-label="Meme actions">
+                <button
+                  className="fyp-action social"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void react("like")}
+                  aria-label={`Like this meme. ${memes[0].likeCount ?? 0} likes`}
+                >
+                  <Heart size={24} weight="fill" aria-hidden />
+                  <span>{memes[0].likeCount ?? 0}</span>
+                </button>
+                <button
+                  className="fyp-action social comments-action"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void openComments()}
+                  aria-haspopup="dialog"
+                  aria-label={`View ${memes[0].commentCount ?? 0} comments`}
+                >
+                  <ChatCircle size={23} weight="bold" aria-hidden />
+                  <span>{memes[0].commentCount ?? 0}</span>
+                </button>
+                <button
+                  className="fyp-action social"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void saveCurrent()}
+                  aria-label={
+                    memes[0].saved ? "Unsave this post" : "Save this post"
+                  }
+                >
+                  <BookmarkSimple
+                    size={23}
+                    weight={memes[0].saved ? "fill" : "bold"}
+                    aria-hidden
+                  />
+                  <span>{memes[0].saved ? "Saved" : "Save"}</span>
+                </button>
+                <button
+                  className="fyp-action social"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void shareCurrent()}
+                  aria-label="Share this post"
+                >
+                  <ShareNetwork size={22} weight="bold" aria-hidden />
+                  <span>Share</span>
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       ) : (
         !error && (
           <Empty
             title="You judged the entire internet."
             action={
-              <button className="button primary full" onClick={onTaste}>
-                See your tasteprint <ArrowRight size={20} />
+              <button
+                className="button primary full"
+                onClick={() => void load(cursor)}
+              >
+                Load more memes <ArrowRight size={20} />
               </button>
             }
           >
@@ -159,120 +270,107 @@ export function FeedScreen({ onTaste }: { onTaste: () => void }) {
           </Empty>
         )
       )}
-    </section>
+      </section>
+      {comments !== null && (
+        <Dialog title="Comments" onClose={() => setComments(null)} className="comments-sheet">
+          <div className="comments-list">
+            {commentsBusy && !comments.length ? (
+              <Loading />
+            ) : comments.length ? (
+              comments.map((comment) => (
+                <article className="comment" key={comment.id}>
+                  <strong>{comment.author.name}</strong>
+                  <p>{comment.body}</p>
+                </article>
+              ))
+            ) : (
+              <p className="supporting">Be the first to say something.</p>
+            )}
+          </div>
+          <form className="comment-form" onSubmit={addComment}>
+            <input
+              value={commentText}
+              onChange={(event) => setCommentText(event.target.value)}
+              placeholder="Add a comment"
+              maxLength={500}
+              disabled={commentsBusy}
+            />
+            <button
+              className="button primary"
+              disabled={commentsBusy || !commentText.trim()}
+            >
+              Post
+            </button>
+          </form>
+        </Dialog>
+      )}
+    </>
   );
 }
 
-export function TasteScreen({
-  onMatches,
-  onMemes,
+export function SavedScreen({
+  onViewProfile,
 }: {
-  onMatches: () => void;
-  onMemes: () => void;
+  onViewProfile: (profileId: string) => void;
 }) {
-  const [taste, setTaste] = useState<Tasteprint | null>(null);
+  const [saved, setSaved] = useState<Meme[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
-  const load = useCallback(() => {
-    setError(null);
-    api<Tasteprint>("/api/tasteprint")
-      .then(setTaste)
-      .catch((e) => setError(e.message));
+
+  useEffect(() => {
+    api<{ memes: Meme[] }>("/api/saved")
+      .then((data) => setSaved(data.memes))
+      .catch((cause) =>
+        setError(cause instanceof Error ? cause.message : "Could not load saved posts."),
+      );
   }, []);
-  useEffect(load, [load]);
+
+  async function removeSaved(id: string) {
+    try {
+      await api<{ saved: boolean }>(`/api/posts/${id}/save`, {});
+      setSaved((previous) => previous?.filter((post) => post.id !== id) ?? []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not update saved posts.");
+    }
+  }
+
   return (
-    <>
-      <SectionTitle
-        eyebrow="The evidence is concerning"
-        title="Your tasteprint."
-      />
+    <section className="saved-screen">
+      <SectionTitle title="Saved posts" />
       <ErrorNote error={error} />
-      {error && (
-        <button className="button secondary" onClick={load}>
-          Try again
-        </button>
-      )}
-      {!taste && !error ? (
-        <Loading />
-      ) : (
-        taste && (
-          <>
-            <div className="taste-intro">
-              <Sparkle size={40} weight="duotone" aria-hidden />
-              <h2>{taste.summary}</h2>
-              <p>
-                Built from {taste.reactionCount} reactions.{" "}
-                {taste.positiveCount} made you laugh.
-              </p>
-            </div>
-            {!taste.calibrated && (
-              <div className="notice">
-                <strong>Still getting to know your weird.</strong>
-                <p>
-                  Like or strong-like at least 10 memes before we calculate
-                  compatibility. No made-up percentages.
-                </p>
-                <button className="text-button" onClick={onMemes}>
-                  Keep judging <ArrowRight size={18} />
+      {!saved && !error ? (
+        <Loading rows={3} />
+      ) : saved?.length ? (
+        <div className="saved-post-list">
+          {saved.map((post) => (
+            <article className="saved-post-card" key={post.id}>
+              <MemeMedia meme={post} compact />
+              <div className="saved-post-copy">
+                {post.author ? (
+                  <button
+                    type="button"
+                    className="saved-post-author"
+                    onClick={() => onViewProfile(post.author!.id)}
+                  >
+                    {post.author.name}
+                  </button>
+                ) : null}
+                <p>{post.caption}</p>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => void removeSaved(post.id)}
+                >
+                  Remove from saved
                 </button>
               </div>
-            )}
-            <div className="taste-bars">
-              {taste.tags.slice(0, 3).map((item, index) => (
-                <div key={item.tag} className="taste-row">
-                  <div>
-                    <span className="taste-index">0{index + 1}</span>
-                    <h3>{item.tag}</h3>
-                  </div>
-                  <div className="taste-track">
-                    <span
-                      style={{
-                        width: `${Math.max(1, (item.weight / (taste.tags[0]?.weight || 1)) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            {taste.tags.length > 3 && (
-              <section className="settings-section">
-                <h3>Also in your emotional support folder</h3>
-                <Tags tags={taste.tags.slice(3, 6).map((t) => t.tag)} />
-                {expanded && (
-                  <div className="tags">
-                    {taste.tags.slice(6).map((t) => (
-                      <span key={t.tag}>{t.tag}</span>
-                    ))}
-                  </div>
-                )}
-                <button
-                  className="text-button"
-                  onClick={() => setExpanded(!expanded)}
-                >
-                  {expanded ? "Show less" : "Show all tags"}
-                </button>
-              </section>
-            )}
-            <button className="button primary full" onClick={onMatches}>
-              Find my people <ArrowRight size={20} />
-            </button>
-            <details className="explanation">
-              <summary>How does this actually work?</summary>
-              <p>
-                The Latent LOL Compatibility Engine gives a LOL one vote and Too
-                good two. A pass gives no positive weight. Rare shared tags
-                matter more.
-              </p>
-              <p>
-                Compatibility combines 80% weighted tag similarity and 20%
-                overlap in your five strongest tags. These bars show relative
-                weights, not scientific certainty. Your starting tags never
-                inflate a score.
-              </p>
-            </details>
-          </>
-        )
+            </article>
+          ))}
+        </div>
+      ) : (
+        <Empty title="Nothing saved yet.">
+          Save a post and it will stay here.
+        </Empty>
       )}
-    </>
+    </section>
   );
 }

@@ -6,6 +6,7 @@ import {
   blocks,
   matches,
   messages,
+  notifications,
   profileDecisions,
   profiles,
   reports,
@@ -122,12 +123,13 @@ export function decideProfile(
       .from(profiles)
       .where(eq(profiles.userId, targetId))
       .get();
-    if (!other || !mutuallyEligible(me, other))
+    if (!other || !other.complete)
       throw new ApiFailure(
         404,
         "PROFILE_NOT_FOUND",
         "This profile is not available.",
       );
+    const eligible = mutuallyEligible(me, other);
     const now = new Date();
     tx.insert(profileDecisions)
       .values({ actorId: userId, targetId, decision, createdAt: now })
@@ -136,7 +138,7 @@ export function decideProfile(
         set: { decision, createdAt: now },
       })
       .run();
-    if (decision === "pass") return { match: null };
+    if (decision === "pass" || !eligible) return { match: null };
     const reciprocal = tx
       .select()
       .from(profileDecisions)
@@ -171,6 +173,32 @@ export function decideProfile(
       .from(matches)
       .where(and(eq(matches.userA, userA), eq(matches.userB, userB)))
       .get()!;
+    tx.insert(notifications)
+      .values({
+        id: randomUUID(),
+        recipientId: userId,
+        actorId: targetId,
+        type: "match",
+        message: "You matched — say something.",
+        memeId: null,
+        matchId: persisted.id,
+        createdAt: now,
+        readAt: null,
+      })
+      .run();
+    tx.insert(notifications)
+      .values({
+        id: randomUUID(),
+        recipientId: targetId,
+        actorId: userId,
+        type: "match",
+        message: "You matched — say something.",
+        memeId: null,
+        matchId: persisted.id,
+        createdAt: now,
+        readAt: null,
+      })
+      .run();
     return { match: matchDTO(persisted, userId) };
   });
 }

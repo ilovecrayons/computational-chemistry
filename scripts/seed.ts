@@ -4,7 +4,7 @@ import { sqlite } from "../db";
 seedDemo()
   .then(() => {
     console.log(
-      "Seeded 10 fictional adult personas. Alex is fresh; Jules has the reciprocal like.",
+      "Seeded 30 fictional adult personas with real names and ten free placeholder photos each.",
     );
     console.log(`Demo sign-in: alex@demo.local / ${DEMO_PASSWORD}`);
     sqlite.close();

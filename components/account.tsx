@@ -1,20 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import {
-  ArrowRight,
-  Heart,
-  SignOut,
-  ArrowCounterClockwise,
-} from "@phosphor-icons/react";
-import type { Gender, Intent, Me, Profile, Tasteprint } from "@/lib/contracts";
-import { ageOn } from "@/features/profile/profile";
-
+import { ArrowRight, BookmarkSimple, SignOut } from "@phosphor-icons/react";
+import type {
+  Gender,
+  Intent,
+  Me,
+  Meme,
+  Profile,
+  PublicProfile,
+  Tasteprint,
+} from "@/lib/contracts";
+import { ageOn } from "@/features/profile/age";
 import { TONES } from "@/features/memes/taxonomy";
-import { api, Dialog, ErrorNote, RequestError, SectionTitle, Tags } from "./ui";
+
+import {
+  api,
+  ErrorNote,
+  Loading,
+  MemeMedia,
+  ProfileVisual,
+  RequestError,
+  SectionTitle,
+} from "./ui";
 
 const genders: Gender[] = ["woman", "man", "nonbinary"];
-const demoPassword = "Memeant-demo-2026!";
 const SIGNUP_DOB_KEY = "computational-chemistry-signup-dob";
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -115,10 +125,8 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
   return (
     <section className={`auth-screen ${mode === "welcome" ? "" : "auth-form"}`}>
       <div className="brand">
-        <Heart size={28} weight="fill" aria-hidden />
-        <span className="brand-name">
-          Computational Chemistry<span className="brand-dot">.</span>
-        </span>
+        <img className="brand-logo" src="/crackd-mark.png" alt="" />
+        <span className="brand-name">crackd</span>
       </div>
       <div className="welcome-art" aria-hidden>
         <span className="art-note note-one">good taste?</span>
@@ -129,7 +137,7 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
         </div>
         <span className="art-note note-two">debatable.</span>
       </div>
-      <p className="eyebrow">A dating prototype with a sense of humor</p>
+      <p className="eyebrow">A dating app with a sense of humor</p>
       <h1>
         Your sense of humor.
         <br />
@@ -238,20 +246,25 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
         </form>
       )}
       {mode === "welcome" && <ErrorNote error={error} />}
-      <p className="fine-print">
-        18+ only. Compatibility is a conversation starter, not a scientific
-        prediction.
-      </p>
     </section>
   );
 }
 
 const radiusOptions = [5, 10, 25, 50, 100] as const;
+function radiusLabel(miles: number): string {
+  return miles === 100 ? "100+ miles" : `${miles} miles`;
+}
 const intentLabels: Record<Intent, string> = {
   relationship: "A relationship",
   casual: "Something casual",
   "figuring-it-out": "Figuring it out",
 };
+const genderLabels: Record<Gender, string> = {
+  woman: "Woman",
+  man: "Man",
+  nonbinary: "Nonbinary",
+};
+type LocationOption = { code?: string; name: string };
 
 function initialProfile(me: Me): Profile {
   const signupDob = readSignupDob();
@@ -262,6 +275,10 @@ function initialProfile(me: Me): Profile {
       dob: signupDob,
       bio: "",
       town: "",
+      state: "",
+      country: "United States",
+      stateCode: "",
+      countryCode: "US",
       matchLocation: "",
       location: "",
       gender: "woman",
@@ -270,7 +287,13 @@ function initialProfile(me: Me): Profile {
       favoriteMemes: [],
       interests: [],
       intent: "relationship",
-      preferences: { genders: [], minAge: 18, maxAge: 45, radiusMiles: 25 },
+      preferences: {
+        genders: [],
+        minAge: 18,
+        maxAge: 45,
+        radiusMiles: 25,
+        minMatchPercent: 0,
+      },
       initialTags: [],
       complete: false,
     }
@@ -320,6 +343,9 @@ export function ProfileForm({
   const [interestsInput, setInterestsInput] = useState(() =>
     (me.profile?.interests ?? []).join(", "),
   );
+  const [countries, setCountries] = useState<LocationOption[]>([]);
+  const [states, setStates] = useState<LocationOption[]>([]);
+  const [cities, setCities] = useState<LocationOption[]>([]);
   const section = useRef<HTMLElement>(null);
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setProfile((previous) => ({ ...previous, [key]: value }));
@@ -327,6 +353,33 @@ export function ProfileForm({
     section.current?.scrollIntoView({ block: "start" });
     section.current?.focus({ preventScroll: true });
   }, [step]);
+  useEffect(() => {
+    void api<LocationOption[]>("/api/locations?level=country")
+      .then(setCountries)
+      .catch(() => setError("Location presets are unavailable right now."));
+  }, []);
+  useEffect(() => {
+    if (!profile.countryCode) {
+      setStates([]);
+      return;
+    }
+    void api<LocationOption[]>(
+      `/api/locations?level=state&country=${profile.countryCode}`,
+    )
+      .then(setStates)
+      .catch(() => setError("State and province presets are unavailable."));
+  }, [profile.countryCode]);
+  useEffect(() => {
+    if (!profile.countryCode || !profile.stateCode) {
+      setCities([]);
+      return;
+    }
+    void api<LocationOption[]>(
+      `/api/locations?level=city&country=${profile.countryCode}&state=${profile.stateCode}`,
+    )
+      .then(setCities)
+      .catch(() => setError("Town presets are unavailable."));
+  }, [profile.countryCode, profile.stateCode]);
   function validateBasics() {
     const errors: Record<string, string> = {};
     const date = new Date(`${profile.dob}T00:00:00Z`);
@@ -350,17 +403,13 @@ export function ProfileForm({
       errors.name = "Enter at least two characters.";
     if (profile.bio.length > 400)
       errors.bio = "Keep this under 400 characters.";
+    if (!profile.countryCode || !profile.country)
+      errors.countryCode = "Choose a supported country.";
     if (
       profile.town.trim().length < 2 ||
       !/^[\p{L}\p{M}\s.,'’()-]+$/u.test(profile.town)
     )
-      errors.town = "Enter the town you want shown publicly.";
-    if (
-      profile.matchLocation.trim().length < 2 ||
-      !/^[\p{L}\p{M}\s.,'’()-]+$/u.test(profile.matchLocation)
-    )
-      errors.matchLocation =
-        "Enter where you want matches calculated from (private).";
+      errors.town = "Choose a town from the presets.";
     if (!gender) errors.gender = "Select your gender.";
     if (!intent) errors.intent = "Select what you are looking for.";
     if (!profile.photos.length)
@@ -402,6 +451,9 @@ export function ProfileForm({
         .filter(Boolean);
       await api("/api/profile", {
         ...profile,
+        matchLocation: [profile.town, profile.state, profile.country]
+          .filter(Boolean)
+          .join(", "),
         gender,
         intent,
         interests,
@@ -423,6 +475,10 @@ export function ProfileForm({
       setBusy(false);
     }
   }
+  const townOptions: LocationOption[] =
+    profile.town && !cities.some((city) => city.name === profile.town)
+      ? [{ name: profile.town }, ...cities]
+      : cities;
   const fieldError = (key: string) =>
     fields[key] ? (
       <span className="field-error" id={`profile-error-${key}`} role="alert">
@@ -522,44 +578,109 @@ export function ProfileForm({
               </label>
             )}
             <label>
-              Town{" "}
-              <span className="label-note">Shown on your profile</span>
-              <input
-                value={profile.town}
-                onChange={(event) => set("town", event.target.value)}
-                placeholder="e.g. Brooklyn"
-                autoComplete="address-level2"
+              Country{" "}
+              <span className="label-note">Choose from the supported countries</span>
+              <select
+                value={profile.countryCode}
+                onChange={(event) => {
+                  const countryCode = event.target.value;
+                  const country = countries.find(
+                    (option) => option.code === countryCode,
+                  )?.name ?? "";
+                  setProfile((previous) => ({
+                    ...previous,
+                    countryCode: countryCode as Profile["countryCode"],
+                    country,
+                    stateCode: "",
+                    state: "",
+                    town: "",
+                    matchLocation: "",
+                  }));
+                }}
                 required
-                minLength={2}
-                maxLength={60}
+                aria-invalid={Boolean(fields.countryCode)}
+                aria-describedby={
+                  fields.countryCode ? "profile-error-countryCode" : undefined
+                }
+              >
+                <option value="">Choose a country</option>
+                {countries.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+              {fieldError("countryCode")}
+            </label>
+            <label>
+              State or province{" "}
+              <span className="label-note">Shown with your town</span>
+              <select
+                value={profile.stateCode}
+                onChange={(event) => {
+                  const stateCode = event.target.value;
+                  const state = states.find(
+                    (option) => option.code === stateCode,
+                  )?.name ?? "";
+                  setProfile((previous) => ({
+                    ...previous,
+                    stateCode,
+                    state,
+                    town: "",
+                    matchLocation: "",
+                  }));
+                }}
+                disabled={!profile.countryCode}
+                required
+                aria-invalid={Boolean(fields.stateCode)}
+                aria-describedby={
+                  fields.stateCode ? "profile-error-stateCode" : undefined
+                }
+              >
+                <option value="">Choose a state or province</option>
+                {states.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+              {fieldError("stateCode")}
+            </label>
+            <label>
+              Town{" "}
+              <span className="label-note">
+                Only town and state appear on your profile
+              </span>
+              <select
+                value={profile.town}
+                onChange={(event) => {
+                  const town = event.target.value;
+                  setProfile((previous) => ({
+                    ...previous,
+                    town,
+                    matchLocation: [town, previous.state, previous.country]
+                      .filter(Boolean)
+                      .join(", "),
+                  }));
+                }}
+                required
                 aria-invalid={Boolean(fields.town)}
                 aria-describedby={
                   fields.town ? "profile-error-town" : undefined
                 }
-              />
+                disabled={!profile.stateCode}
+              >
+                <option value="">Choose a town</option>
+                {townOptions.map((option) => (
+                  <option key={option.code || option.name} value={option.name}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
               {fieldError("town")}
             </label>
             <label>
-              Match location{" "}
-              <span className="label-note">Private · used for distance</span>
-              <input
-                value={profile.matchLocation}
-                onChange={(event) => set("matchLocation", event.target.value)}
-                placeholder="e.g. Brooklyn, NY"
-                required
-                minLength={2}
-                maxLength={60}
-                aria-invalid={Boolean(fields.matchLocation)}
-                aria-describedby={
-                  fields.matchLocation
-                    ? "profile-error-matchLocation"
-                    : undefined
-                }
-              />
-              {fieldError("matchLocation")}
-            </label>
-            <label>
-              Anything else
+              Bio
               <textarea
                 value={profile.bio}
                 onChange={(event) => set("bio", event.target.value)}
@@ -638,9 +759,9 @@ export function ProfileForm({
                 {genders.map((value) => (
                   <button
                     type="button"
-                    key={value}
                     className={`choice ${profile.preferences.genders.includes(value) ? "selected" : ""}`}
                     aria-pressed={profile.preferences.genders.includes(value)}
+                    key={value}
                     onClick={() =>
                       set("preferences", {
                         ...profile.preferences,
@@ -705,10 +826,32 @@ export function ProfileForm({
                 >
                   {radiusOptions.map((miles) => (
                     <option key={miles} value={miles}>
-                      {miles} miles
+                      {radiusLabel(miles)}
                     </option>
                   ))}
                 </select>
+              </label>
+              <label>
+                Minimum meme match
+                <input
+                  className="profile-range"
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={profile.preferences.minMatchPercent ?? 0}
+                  onChange={(event) =>
+                    set("preferences", {
+                      ...profile.preferences,
+                      minMatchPercent: Number(event.target.value),
+                    })
+                  }
+                  aria-label="Minimum meme match"
+                />
+                <small className="supporting">
+                  Only people at or above this made-up score appear in
+                  Discover.
+                </small>
               </label>
               {fieldError("preferences")}
             </fieldset>
@@ -716,7 +859,7 @@ export function ProfileForm({
               <legend>Your photos</legend>
               <p className="supporting">Add at least one. Up to six.</p>
               <label className="photo-upload">
-                Upload photos
+                <span>Choose files</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -762,7 +905,7 @@ export function ProfileForm({
             </fieldset>
           </>
         )}
-        {(step === 3 || editing) && tagPicker}
+        {step === 3 && !editing && tagPicker}
         <ErrorNote error={error} />
         <button className="button primary" disabled={busy}>
           {busy
@@ -793,33 +936,29 @@ export function ProfileForm({
 export function MeScreen({
   me,
   onRefresh,
+  onSavedPosts,
   onSignedOut,
-  onTaste,
-  onAdmin,
 }: {
   me: Me;
   onRefresh: () => void;
+  onSavedPosts: () => void;
   onSignedOut: () => void;
-  onTaste: () => void;
-  onAdmin: () => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [taste, setTaste] = useState<Tasteprint | null>(null);
-  const [personas, setPersonas] = useState<
-    { id: string; name: string; email: string }[]
-  >([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [posts, setPosts] = useState<Meme[]>([]);
   useEffect(() => {
     api<Tasteprint>("/api/tasteprint")
       .then(setTaste)
       .catch((e) => setError(e.message));
-    if (me.demoMode)
-      api<{ personas: typeof personas }>("/api/demo/personas")
-        .then((r) => setPersonas(r.personas))
-        .catch((e) => setError(e.message));
-  }, [me.demoMode]);
+  }, []);
+  useEffect(() => {
+    api<{ posts: Meme[] }>("/api/posts/mine")
+      .then((result) => setPosts(result.posts))
+      .catch((e) => setError(e.message));
+  }, [me.user.id]);
   async function signOut() {
     setBusy(true);
     try {
@@ -831,32 +970,14 @@ export function MeScreen({
       setBusy(false);
     }
   }
-  async function switchPersona(email: string) {
-    setBusy(true);
-    setError(null);
-    try {
-      await api("/api/auth/sign-out", {});
-      await api("/api/auth/sign-in/email", { email, password: demoPassword });
-      onRefresh();
-    } catch (e) {
-      setError((e as Error).message);
-      onSignedOut();
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function reset() {
-    setBusy(true);
-    try {
-      await api("/api/admin/demo-reset", {});
-      setConfirmReset(false);
-      onRefresh();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const profile = me.profile!;
+  const photos = profile.photos.length
+    ? profile.photos
+    : profile.photo
+      ? [profile.photo]
+      : [];
+  const age = ageOn(profile.dob);
+
   if (editing)
     return (
       <>
@@ -875,35 +996,130 @@ export function MeScreen({
     );
   return (
     <>
-      <SectionTitle
-        eyebrow="A little less mysterious"
-        title="Me, unfortunately."
-      />
-      <div className="profile-summary">
-        <img
-          className="profile-avatar"
-          src={me.profile!.photo}
-          alt={`${me.profile!.name}'s illustrated portrait`}
-        />
-        <div>
-          <h2>{me.profile!.name}</h2>
-          <p>{me.profile!.town || me.profile!.location}</p>
+      <SectionTitle title="Your profile" />
+      <section className="profile-details" aria-labelledby="profile-details-title">
+        <div className="profile-summary">
+          <ProfileVisual
+            className="profile-avatar"
+            name={profile.name}
+            src={profile.photo}
+          />
+          <div>
+            <h2 id="profile-details-title">
+              {profile.name}, {age}
+            </h2>
+            <p>
+              {[
+                profile.town || profile.location,
+                profile.stateCode || profile.state,
+                profile.country,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </p>
+          </div>
         </div>
-      </div>
-      <p className="bio">{me.profile!.bio}</p>
+        {profile.bio && <p className="bio">{profile.bio}</p>}
+        <dl className="profile-facts">
+          <div>
+            <dt>Age</dt>
+            <dd>{age}</dd>
+          </div>
+          <div>
+            <dt>Gender</dt>
+            <dd>{genderLabels[profile.gender]}</dd>
+          </div>
+          <div>
+            <dt>Dating goals</dt>
+            <dd>{intentLabels[profile.intent]}</dd>
+          </div>
+          <div>
+            <dt>Interested in</dt>
+            <dd>
+              {profile.preferences.genders
+                .map((gender) => genderLabels[gender])
+                .join(", ")}
+            </dd>
+          </div>
+          <div>
+            <dt>Age range</dt>
+            <dd>
+              {profile.preferences.minAge}–{profile.preferences.maxAge}
+            </dd>
+          </div>
+          <div>
+            <dt>Distance</dt>
+            <dd>Within {radiusLabel(profile.preferences.radiusMiles)} of you</dd>
+          </div>
+        </dl>
+        {profile.interests.length > 0 && (
+          <div className="profile-detail-group">
+            <h3>Interests</h3>
+            <div className="profile-tag-list">
+              {profile.interests.map((interest) => (
+                <span key={interest}>{interest}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
       <button
         className="button secondary full"
         onClick={() => setEditing(true)}
       >
         Edit profile
       </button>
+      <section className="profile-photos" aria-labelledby="profile-photos-title">
+        <div className="section-heading-row">
+          <div>
+            <h2 id="profile-photos-title">Photos</h2>
+          </div>
+        </div>
+        {photos.length ? (
+          <div className="profile-photo-grid">
+            {photos.map((photo, index) => (
+              <ProfileVisual
+                key={`${photo}-${index}`}
+                name={profile.name}
+                label={`${profile.name}'s dating profile photo ${index + 1}`}
+                src={photo}
+                className="profile-photo"
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="supporting">Add photos to finish your profile.</p>
+        )}
+      </section>
+      <section className="profile-posts">
+        <div className="section-heading-row">
+          <div>
+            <h2>Posts</h2>
+          </div>
+        </div>
+        {posts.length ? (
+          <div className="profile-post-grid">
+            {posts.map((post) => (
+              <figure className="profile-post-item" key={post.id}>
+                <MemeMedia meme={post} compact />
+                <figcaption>{post.caption}</figcaption>
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <p className="supporting">Your posts will live here.</p>
+        )}
+        <button
+          className="button secondary full profile-saved-button"
+          onClick={onSavedPosts}
+        >
+          <BookmarkSimple size={20} aria-hidden />
+          Saved posts
+        </button>
+      </section>
       <section className="settings-section">
         <h2>Your sense of humor</h2>
         <p>{taste?.summary || "Every LOL tells us something."}</p>
-        <Tags tags={taste?.tags.map((t) => t.tag) || []} />
-        <button className="text-button" onClick={onTaste}>
-          View tasteprint <ArrowRight size={18} />
-        </button>
         <p className="supporting">
           Built from {taste?.reactionCount ?? 0} reactions.
         </p>
@@ -912,76 +1128,162 @@ export function MeScreen({
         <h2>Your account</h2>
         <p>{me.user.email}</p>
         <p className="supporting">
-          Your date of birth and preferences stay private. Block, report, and
-          unmatch controls are available on people and chats.
+          Your date of birth stays private. Block, report, and unmatch controls
+          are available on people and chats.
         </p>
         <button className="text-button" disabled={busy} onClick={signOut}>
           <SignOut size={20} />
           Sign out
         </button>
       </section>
-      {me.demoMode && (
-        <section className="settings-section demo-panel">
-          <p className="eyebrow">Demo controls · fictional adults</p>
-          <label>
-            Switch persona
-            <select
-              value={me.user.email}
-              disabled={busy}
-              onChange={(e) => void switchPersona(e.target.value)}
-            >
-              {personas.map((p) => (
-                <option key={p.id} value={p.email}>
-                  {p.name}
-                  {p.id === "demo-alex" ? " · fresh start" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="text-button" onClick={onAdmin}>
-            Open media studio <ArrowRight size={18} />
-          </button>
-          <button
-            className="text-button"
-            disabled={busy}
-            onClick={() => setConfirmReset(true)}
-          >
-            <ArrowCounterClockwise size={20} />
-            Reset demo
-          </button>
-          <p className="supporting">
-            Local illustrated demo media. Generate xAI media separately in the
-            studio.
-          </p>
-        </section>
-      )}
       <ErrorNote error={error} />
-      <p className="fine-print">
-        Computational Chemistry is a prototype, not a production dating service.
-        The Latent LOL Compatibility Engine ranks shared humor, not your future.
-      </p>
-      {confirmReset && (
-        <Dialog title="Reset the demo?" onClose={() => setConfirmReset(false)}>
-          <p>
-            This restores fictional profiles, reactions, matches, and messages.
-            Existing accounts remain. Your saved media library is not deleted or
-            regenerated.
-          </p>
+    </>
+  );
+}
+export function PublicProfileScreen({
+  profileId,
+  onBack,
+  onMatched,
+}: {
+  profileId: string;
+  onBack: () => void;
+  onMatched: () => void;
+}) {
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [posts, setPosts] = useState<Meme[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [matchStatus, setMatchStatus] = useState<
+    "idle" | "busy" | "liked" | "matched"
+  >("idle");
+
+  useEffect(() => {
+    setProfile(null);
+    setPosts([]);
+    setError(null);
+    api<{ profile: PublicProfile; posts: Meme[] }>(
+      `/api/profiles/${encodeURIComponent(profileId)}`,
+    )
+      .then((result) => {
+        setProfile(result.profile);
+        setPosts(result.posts);
+      })
+      .catch((cause) =>
+        setError(cause instanceof Error ? cause.message : "Profile unavailable."),
+      );
+  }, [profileId]);
+
+  async function matchProfile() {
+    if (!profile || matchStatus === "busy" || matchStatus !== "idle") return;
+    setMatchStatus("busy");
+    setError(null);
+    try {
+      const result = await api<{ match: unknown }>(
+        "/api/profile-decisions",
+        { targetId: profile.id, decision: "like" },
+      );
+      if (result.match) {
+        setMatchStatus("matched");
+        onMatched();
+      } else {
+        setMatchStatus("liked");
+      }
+    } catch (cause) {
+      setMatchStatus("idle");
+      setError(cause instanceof Error ? cause.message : "Could not send a match.");
+    }
+  }
+
+  return (
+    <>
+      <button className="text-button" onClick={onBack}>
+        Back to discover
+      </button>
+      {error ? (
+        <section className="session-error">
+          <SectionTitle title="That profile moved on." />
           <ErrorNote error={error} />
+        </section>
+      ) : !profile ? (
+        <Loading />
+      ) : (
+        <>
+          <SectionTitle title={`${profile.name}'s profile`} />
+          <section className="profile-details" aria-labelledby="public-profile-title">
+            <div className="profile-summary">
+              <ProfileVisual
+                className="profile-avatar"
+                name={profile.name}
+                src={profile.photo}
+              />
+              <div>
+                <h2 id="public-profile-title">
+                  {profile.name}, {profile.age}
+                </h2>
+                <p>
+                  {[profile.town || profile.location, profile.stateCode || profile.state]
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
+              </div>
+            </div>
+            {profile.bio && <p className="bio">{profile.bio}</p>}
+            <dl className="profile-facts">
+              <div>
+                <dt>Dating goals</dt>
+                <dd>{intentLabels[profile.intent]}</dd>
+              </div>
+              {profile.interests.length > 0 && (
+                <div>
+                  <dt>Interests</dt>
+                  <dd>{profile.interests.join(", ")}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
           <button
-            className="button danger full"
-            disabled={busy}
-            onClick={reset}
+            className="button primary full profile-match-button"
+            disabled={matchStatus !== "idle"}
+            onClick={() => void matchProfile()}
           >
-            {busy ? "Resetting…" : "Reset demo"}
+            {matchStatus === "busy"
+              ? "Sending…"
+              : matchStatus === "liked"
+                ? "Match sent"
+                : matchStatus === "matched"
+                  ? "It’s a match"
+                  : "Match"}
+            {matchStatus === "idle" && <ArrowRight size={20} />}
           </button>
-          <button
-            className="button secondary full"
-            onClick={() => setConfirmReset(false)}
-          >
-            Keep my progress
-          </button>
-        </Dialog>
+          <section className="profile-photos" aria-labelledby="public-photos-title">
+            <div className="section-heading-row">
+              <h2 id="public-photos-title">Photos</h2>
+            </div>
+            <div className="profile-photo-grid">
+              {profile.photos.map((photo, index) => (
+                <ProfileVisual
+                  key={`${photo}-${index}`}
+                  name={`${profile.name}'s photo ${index + 1}`}
+                  src={photo}
+                  className="profile-photo"
+                />
+              ))}
+            </div>
+          </section>
+          <section className="profile-posts">
+            <div className="section-heading-row">
+              <h2>Posts</h2>
+            </div>
+            {posts.length ? (
+              <div className="profile-post-grid">
+                {posts.map((post) => (
+                  <MemeMedia key={post.id} meme={post} compact />
+                ))}
+              </div>
+            ) : (
+              <p className="supporting">Their posts will live here.</p>
+            )}
+          </section>
+        </>
       )}
     </>
   );

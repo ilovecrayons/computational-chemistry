@@ -8,6 +8,8 @@ export interface Preferences {
   minAge: number;
   maxAge: number;
   radiusMiles: RadiusMiles;
+  /** Minimum invented meme-match score required for Discover. */
+  minMatchPercent?: number;
 }
 
 export interface PublicProfile {
@@ -15,6 +17,8 @@ export interface PublicProfile {
   name: string;
   age: number;
   town: string;
+  state: string;
+  stateCode: string;
   bio: string;
   photo: string;
   photos: string[];
@@ -31,8 +35,12 @@ export interface Profile {
   dob: string;
   bio: string;
   town: string;
-  matchLocation: string;
+  state: string;
+  country: string;
+  stateCode: string;
+  countryCode: string;
   gender: Gender;
+  matchLocation: string;
   photo: string;
   photos: string[];
   favoriteMemes: string[];
@@ -57,6 +65,10 @@ export interface Meme {
   src: string;
   poster: string | null;
   caption: string;
+  author?: { id: string; name: string } | null;
+  likeCount?: number;
+  commentCount?: number;
+  saved?: boolean;
 }
 
 export interface Tasteprint {
@@ -68,7 +80,7 @@ export interface Tasteprint {
 }
 
 export interface Compatibility {
-  score: number | null;
+  score: number;
   cosine: number;
   jaccard: number;
   sharedTags: string[];
@@ -78,8 +90,9 @@ export interface Compatibility {
 
 export interface Candidate extends PublicProfile {
   compatibility: Compatibility;
+  /** Profiles shown for context when current filters have no matches. */
+  browseOnly?: boolean;
 }
-
 export interface Match {
   id: string;
   profile: PublicProfile;
@@ -107,4 +120,22 @@ export interface Generation {
 
 export interface ApiError {
   error: { code: string; message: string; fields?: Record<string, string> };
+}
+export type NotificationType = "match" | "message" | "like" | "comment";
+export interface FeedComment {
+  id: string;
+  memeId: string;
+  author: { id: string; name: string };
+  body: string;
+  createdAt: string;
+}
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  message: string;
+  actor: { id: string; name: string } | null;
+  memeId: string | null;
+  matchId: string | null;
+  createdAt: string;
+  readAt: string | null;
 }

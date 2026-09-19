@@ -5,7 +5,7 @@ import { accounts, sessions, users, verifications } from "../db/schema";
 import { config } from "./config";
 
 export const auth = betterAuth({
-  appName: "Computational Chemistry",
+  appName: "Crackd",
   baseURL: config.baseUrl,
   secret: config.secret,
   trustedOrigins: [config.baseUrl],
