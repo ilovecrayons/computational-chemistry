@@ -124,7 +124,7 @@ export const demoSpecs = jokes.map(([headline, punchline], index) => {
     headline,
     punchline,
     tags: tagsFor(spec),
-    caption: `${headline} — ${punchline}. Offline illustrated demo${index >= 60 ? " · silent animation" : ""}.`,
+    caption: `${headline} — ${punchline}${index >= 60 ? " · silent animation" : ""}.`,
     prompt: buildPrompt(spec),
   };
 });

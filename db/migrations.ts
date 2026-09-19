@@ -23,6 +23,16 @@ CREATE TABLE blocks (actor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCA
 CREATE TABLE reports (id TEXT PRIMARY KEY NOT NULL, actor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, target_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, reason TEXT NOT NULL, created_at INTEGER NOT NULL);
 `;
 
+const profileV2 = `
+ALTER TABLE profiles ADD COLUMN town TEXT NOT NULL DEFAULT '';
+ALTER TABLE profiles ADD COLUMN match_location TEXT NOT NULL DEFAULT '';
+ALTER TABLE profiles ADD COLUMN photos TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE profiles ADD COLUMN favorite_memes TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE profiles ADD COLUMN interests TEXT NOT NULL DEFAULT '[]';
+UPDATE profiles SET town = location, match_location = location WHERE town = '' AND location <> '';
+UPDATE profiles SET photos = json_array(photo) WHERE photos = '[]' AND photo <> '';
+`;
+
 export function migrate(database: Database.Database) {
   database.exec(
     "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL)",
@@ -37,6 +47,26 @@ export function migrate(database: Database.Database) {
       database
         .prepare(
           "INSERT INTO schema_migrations(version,applied_at) VALUES(1,?)",
+        )
+        .run(Date.now());
+    }
+    if (
+      !database
+        .prepare("SELECT version FROM schema_migrations WHERE version = 2")
+        .get()
+    ) {
+      for (const statement of profileV2.trim().split(";\n")) {
+        if (statement.trim()) {
+          try {
+            database.exec(`${statement.trim()};`);
+          } catch {
+            /* column may already exist on partially migrated databases */
+          }
+        }
+      }
+      database
+        .prepare(
+          "INSERT INTO schema_migrations(version,applied_at) VALUES(2,?)",
         )
         .run(Date.now());
     }

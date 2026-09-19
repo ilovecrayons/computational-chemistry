@@ -20,6 +20,7 @@ import {
   requireProfile,
   type ProfileRow,
 } from "../profile/profile";
+import { locationWithinRadius } from "./location";
 
 export type MemeRow = typeof memes.$inferSelect;
 export function memeDTO(row: MemeRow): Meme {
@@ -172,10 +173,18 @@ export function getTasteprint(userId: string): Tasteprint {
           : "You like what everyone likes so far. Keep reacting to find your distinctive humor.",
   };
 }
+function matchLocationFor(row: ProfileRow): string {
+  return row.matchLocation || row.town || row.location || "";
+}
+
 export function mutuallyEligible(a: ProfileRow, b: ProfileRow): boolean {
   if (a.userId === b.userId || !a.complete || !b.complete) return false;
   const aAge = ageOn(a.dob),
     bAge = ageOn(b.dob);
+  const aLoc = matchLocationFor(a);
+  const bLoc = matchLocationFor(b);
+  const aRadius = a.preferences.radiusMiles ?? 25;
+  const bRadius = b.preferences.radiusMiles ?? 25;
   return (
     aAge >= 18 &&
     bAge >= 18 &&
@@ -184,7 +193,9 @@ export function mutuallyEligible(a: ProfileRow, b: ProfileRow): boolean {
     bAge >= a.preferences.minAge &&
     bAge <= a.preferences.maxAge &&
     aAge >= b.preferences.minAge &&
-    aAge <= b.preferences.maxAge
+    aAge <= b.preferences.maxAge &&
+    locationWithinRadius(aLoc, bLoc, aRadius) &&
+    locationWithinRadius(bLoc, aLoc, bRadius)
   );
 }
 export function blockedPair(a: string, b: string): boolean {

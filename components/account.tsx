@@ -8,34 +8,91 @@ import {
   ArrowCounterClockwise,
 } from "@phosphor-icons/react";
 import type { Gender, Intent, Me, Profile, Tasteprint } from "@/lib/contracts";
+import { ageOn } from "@/features/profile/profile";
+
 import { TONES } from "@/features/memes/taxonomy";
 import { api, Dialog, ErrorNote, RequestError, SectionTitle, Tags } from "./ui";
 
 const genders: Gender[] = ["woman", "man", "nonbinary"];
 const demoPassword = "Memeant-demo-2026!";
+const SIGNUP_DOB_KEY = "computational-chemistry-signup-dob";
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function latestAdultBirthDate(): string {
+  const today = new Date();
+  return new Date(
+    Date.UTC(
+      today.getUTCFullYear() - 18,
+      today.getUTCMonth(),
+      today.getUTCDate(),
+    ),
+  )
+    .toISOString()
+    .slice(0, 10);
+}
+
+function readSignupDob(): string {
+  if (typeof sessionStorage === "undefined") return "";
+  const value = sessionStorage.getItem(SIGNUP_DOB_KEY);
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+}
+
+function signupNameFromEmail(email: string): string {
+  const local = email.split("@")[0]?.trim() ?? "";
+  const cleaned = local.replace(/[^a-zA-Z0-9]+/g, " ").trim();
+  if (cleaned.length >= 2) return cleaned.slice(0, 40);
+  return "New member";
+}
+
+function validateSignupForm(data: FormData): string | null {
+  const email = String(data.get("email") ?? "").trim();
+  const password = String(data.get("password") ?? "");
+  const dob = String(data.get("dob") ?? "");
+
+  if (!emailPattern.test(email)) return "Enter a valid email address.";
+  if (password.length < 10) return "Password must be at least 10 characters.";
+
+  const date = new Date(`${dob}T00:00:00Z`);
+  if (
+    !dob ||
+    !Number.isFinite(date.valueOf()) ||
+    date.toISOString().slice(0, 10) !== dob
+  )
+    return "Enter a valid date of birth.";
+  if (ageOn(dob) < 18) return "You must be at least 18 to join.";
+  if (ageOn(dob) > 100) return "Enter a valid date of birth.";
+  return null;
+}
+
+function validateSigninForm(data: FormData): string | null {
+  const email = String(data.get("email") ?? "").trim();
+  const password = String(data.get("password") ?? "");
+  if (!emailPattern.test(email)) return "Enter a valid email address.";
+  if (!password) return "Enter your password.";
+  return null;
+}
+
 export function AuthScreen({ onDone }: { onDone: () => void }) {
   const [mode, setMode] = useState<"welcome" | "signin" | "signup">("welcome");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [demo, setDemo] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    api<{ personas: unknown[] }>("/api/demo/personas")
-      .then(() => setDemo(true))
-      .catch(() => {});
-  }, []);
   useEffect(() => {
     if (mode !== "welcome") heading.current?.focus();
   }, [mode]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
-    setError(null);
     const data = new FormData(event.currentTarget);
-    if (mode === "signup" && data.get("adult") !== "on") {
-      setError("You must be 18 or older to join.");
+    const clientError =
+      mode === "signup"
+        ? validateSignupForm(data)
+        : validateSigninForm(data);
+    if (clientError) {
+      setError(clientError);
       return;
     }
+    setError(null);
     setBusy(true);
     try {
       await api(
@@ -43,28 +100,14 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
         {
           email: data.get("email"),
           password: data.get("password"),
-          ...(mode === "signup" ? { name: data.get("name") } : {}),
+          ...(mode === "signup" ? { name: signupNameFromEmail(String(data.get("email"))) } : {}),
         },
       );
+      if (mode === "signup")
+        sessionStorage.setItem(SIGNUP_DOB_KEY, String(data.get("dob")));
       onDone();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to sign in.");
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function enterDemo() {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await api("/api/auth/sign-in/email", {
-        email: "alex@demo.local",
-        password: demoPassword,
-      });
-      onDone();
-    } catch (cause) {
-      setError((cause as Error).message);
     } finally {
       setBusy(false);
     }
@@ -111,14 +154,9 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
           >
             I have an account
           </button>
-          {demo && (
-            <button className="text-button" disabled={busy} onClick={enterDemo}>
-              {busy ? "Opening demo…" : "Try the fictional demo"}
-            </button>
-          )}
         </div>
       ) : (
-        <form onSubmit={submit} className="stack" aria-busy={busy}>
+        <form onSubmit={submit} className="stack" noValidate aria-busy={busy}>
           <div className="form-heading">
             <h2 ref={heading} tabIndex={-1}>
               {mode === "signup"
@@ -127,21 +165,9 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
             </h2>
             <span>{mode === "signup" ? "1 of 3" : "Welcome back"}</span>
           </div>
-          {mode === "signup" && (
-            <label>
-              Your name
-              <input
-                name="name"
-                autoComplete="given-name"
-                required
-                minLength={2}
-                maxLength={40}
-              />
-            </label>
-          )}
           <label>
             Email
-            <input name="email" type="email" autoComplete="email" required />
+            <input name="email" type="email" autoComplete="email" />
           </label>
           <label>
             Password
@@ -154,7 +180,6 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
                 mode === "signup" ? "new-password" : "current-password"
               }
               aria-describedby={mode === "signup" ? "password-help" : undefined}
-              required
             />
             {mode === "signup" && (
               <span className="supporting" id="password-help">
@@ -163,9 +188,18 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
             )}
           </label>
           {mode === "signup" && (
-            <label className="check-row">
-              <input type="checkbox" name="adult" required />I am at least 18
-              years old.
+            <label>
+              Date of birth{" "}
+              <span className="label-note" id="signup-dob-help">
+                Private. You must be at least 18.
+              </span>
+              <input
+                type="date"
+                name="dob"
+                autoComplete="bday"
+                max={latestAdultBirthDate()}
+                aria-describedby="signup-dob-help"
+              />
             </label>
           )}
           <ErrorNote error={error} />
@@ -173,23 +207,23 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
             {busy
               ? "One moment…"
               : mode === "signup"
-                ? "Create account"
+                ? "Next"
                 : "Sign in"}
             <ArrowRight size={20} />
           </button>
-          <button
-            className="text-button"
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setMode(mode === "signup" ? "signin" : "signup");
-              setError(null);
-            }}
-          >
-            {mode === "signup"
-              ? "Already have an account?"
-              : "Create an account instead"}
-          </button>
+          {mode === "signin" && (
+            <button
+              className="text-button"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setMode("signup");
+                setError(null);
+              }}
+            >
+              Create an account instead
+            </button>
+          )}
           <button
             className="text-button"
             type="button"
@@ -212,23 +246,56 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
   );
 }
 
+const radiusOptions = [5, 10, 25, 50, 100] as const;
+const intentLabels: Record<Intent, string> = {
+  relationship: "A relationship",
+  casual: "Something casual",
+  "figuring-it-out": "Figuring it out",
+};
+
 function initialProfile(me: Me): Profile {
+  const signupDob = readSignupDob();
   return (
     me.profile || {
       id: me.user.id,
       name: me.user.name,
-      dob: "",
+      dob: signupDob,
       bio: "",
+      town: "",
+      matchLocation: "",
       location: "",
-      gender: "nonbinary",
-      photo: "/demo/person-1.svg",
+      gender: "woman",
+      photo: "",
+      photos: [],
+      favoriteMemes: [],
+      interests: [],
       intent: "relationship",
-      preferences: { genders: [...genders], minAge: 18, maxAge: 45 },
+      preferences: { genders: [], minAge: 18, maxAge: 45, radiusMiles: 25 },
       initialTags: [],
       complete: false,
     }
   );
 }
+
+function readPhotos(files: FileList | null): Promise<string[]> {
+  if (!files?.length) return Promise.resolve([]);
+  return Promise.all(
+    Array.from(files).slice(0, 6).map(
+      (file) =>
+        new Promise<string>((resolve, reject) => {
+          if (file.size > 900_000) {
+            reject(new Error("Each photo must be under 900 KB."));
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error("Could not read that photo."));
+          reader.readAsDataURL(file);
+        }),
+    ),
+  );
+}
+
 export function ProfileForm({
   me,
   onSaved,
@@ -243,6 +310,16 @@ export function ProfileForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [signupDob] = useState(() => (editing ? "" : readSignupDob()));
+  const [gender, setGender] = useState<Gender | "">(
+    () => me.profile?.gender ?? "",
+  );
+  const [intent, setIntent] = useState<Intent | "">(
+    () => me.profile?.intent ?? "",
+  );
+  const [interestsInput, setInterestsInput] = useState(() =>
+    (me.profile?.interests ?? []).join(", "),
+  );
   const section = useRef<HTMLElement>(null);
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setProfile((previous) => ({ ...previous, [key]: value }));
@@ -271,13 +348,23 @@ export function ProfileForm({
       errors.dob = "You must be at least 18. Enter a valid date of birth.";
     if (profile.name.trim().length < 2)
       errors.name = "Enter at least two characters.";
-    if (profile.bio.trim().length < 8)
-      errors.bio = "Tell people a little about yourself.";
+    if (profile.bio.length > 400)
+      errors.bio = "Keep this under 400 characters.";
     if (
-      profile.location.trim().length < 2 ||
-      !/^[\p{L}\p{M}\s.,'’()-]+$/u.test(profile.location)
+      profile.town.trim().length < 2 ||
+      !/^[\p{L}\p{M}\s.,'’()-]+$/u.test(profile.town)
     )
-      errors.location = "Enter a city or broad area, not an address.";
+      errors.town = "Enter the town you want shown publicly.";
+    if (
+      profile.matchLocation.trim().length < 2 ||
+      !/^[\p{L}\p{M}\s.,'’()-]+$/u.test(profile.matchLocation)
+    )
+      errors.matchLocation =
+        "Enter where you want matches calculated from (private).";
+    if (!gender) errors.gender = "Select your gender.";
+    if (!intent) errors.intent = "Select what you are looking for.";
+    if (!profile.photos.length)
+      errors.photos = "Add at least one photo.";
     if (!profile.preferences.genders.length)
       errors.preferences = "Select at least one gender you would like to meet.";
     if (profile.preferences.minAge > profile.preferences.maxAge)
@@ -309,7 +396,18 @@ export function ProfileForm({
     }
     setBusy(true);
     try {
-      await api("/api/profile", profile);
+      const interests = interestsInput
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      await api("/api/profile", {
+        ...profile,
+        gender,
+        intent,
+        interests,
+        photo: profile.photos[0],
+      });
+      sessionStorage.removeItem(SIGNUP_DOB_KEY);
       onSaved();
     } catch (cause) {
       setError((cause as Error).message);
@@ -337,7 +435,7 @@ export function ProfileForm({
     >
       <legend>Three starting humor tags</legend>
       <p className="supporting" id="tag-help">
-        Just a starting point. Your actual reactions replace these assumptions.
+        Shown on your profile until reactions refine your taste.
       </p>
       <div className="choice-grid">
         {TONES.map((tone) => (
@@ -365,8 +463,7 @@ export function ProfileForm({
         ))}
       </div>
       <p className="supporting" aria-live="polite">
-        {profile.initialTags.length} of 3 selected. Tap a selected tag to change
-        it.
+        {profile.initialTags.length} of 3 selected.
       </p>
       {fieldError("initialTags")}
     </fieldset>
@@ -395,7 +492,7 @@ export function ProfileForm({
               <input
                 value={profile.name}
                 onChange={(event) => set("name", event.target.value)}
-                autoComplete="given-name"
+                autoComplete="nickname"
                 required
                 minLength={2}
                 maxLength={40}
@@ -406,47 +503,67 @@ export function ProfileForm({
               />
               {fieldError("name")}
             </label>
+            {(!signupDob || editing) && (
+              <label>
+                Date of birth{" "}
+                <span className="label-note" id="dob-help">
+                  Private. Only your age is shown.
+                </span>
+                <input
+                  type="date"
+                  value={profile.dob}
+                  onChange={(event) => set("dob", event.target.value)}
+                  autoComplete="bday"
+                  required
+                  aria-invalid={Boolean(fields.dob)}
+                  aria-describedby={`dob-help${fields.dob ? " profile-error-dob" : ""}`}
+                />
+                {fieldError("dob")}
+              </label>
+            )}
             <label>
-              Date of birth{" "}
-              <span className="label-note" id="dob-help">
-                Private. Only your age is shown.
-              </span>
+              Town{" "}
+              <span className="label-note">Shown on your profile</span>
               <input
-                type="date"
-                value={profile.dob}
-                onChange={(event) => set("dob", event.target.value)}
-                autoComplete="bday"
-                required
-                aria-invalid={Boolean(fields.dob)}
-                aria-describedby={`dob-help${fields.dob ? " profile-error-dob" : ""}`}
-              />
-              {fieldError("dob")}
-            </label>
-            <label>
-              Broad location
-              <input
-                value={profile.location}
-                onChange={(event) => set("location", event.target.value)}
+                value={profile.town}
+                onChange={(event) => set("town", event.target.value)}
                 placeholder="e.g. Brooklyn"
                 autoComplete="address-level2"
                 required
                 minLength={2}
                 maxLength={60}
-                aria-invalid={Boolean(fields.location)}
+                aria-invalid={Boolean(fields.town)}
                 aria-describedby={
-                  fields.location ? "profile-error-location" : undefined
+                  fields.town ? "profile-error-town" : undefined
                 }
               />
-              {fieldError("location")}
+              {fieldError("town")}
             </label>
             <label>
-              One thing about you
+              Match location{" "}
+              <span className="label-note">Private · used for distance</span>
+              <input
+                value={profile.matchLocation}
+                onChange={(event) => set("matchLocation", event.target.value)}
+                placeholder="e.g. Brooklyn, NY"
+                required
+                minLength={2}
+                maxLength={60}
+                aria-invalid={Boolean(fields.matchLocation)}
+                aria-describedby={
+                  fields.matchLocation
+                    ? "profile-error-matchLocation"
+                    : undefined
+                }
+              />
+              {fieldError("matchLocation")}
+            </label>
+            <label>
+              Anything else
               <textarea
                 value={profile.bio}
                 onChange={(event) => set("bio", event.target.value)}
-                placeholder="My love language is sending you a meme with no context."
-                required
-                minLength={8}
+                placeholder="Optional. Memes, snacks, chaos."
                 maxLength={400}
                 rows={3}
                 aria-invalid={Boolean(fields.bio)}
@@ -455,15 +572,33 @@ export function ProfileForm({
               {fieldError("bio")}
             </label>
             <label>
+              Interests
+              <input
+                value={interestsInput}
+                onChange={(event) => setInterestsInput(event.target.value)}
+                placeholder="coffee, hiking, indie games"
+              />
+              <span className="supporting">Comma-separated tags.</span>
+            </label>
+            <label>
               Gender
               <select
-                value={profile.gender}
+                value={gender}
                 onChange={(event) =>
-                  set("gender", event.target.value as Gender)
+                  setGender(event.target.value as Gender | "")
+                }
+                aria-invalid={Boolean(fields.gender)}
+                aria-describedby={
+                  fields.gender ? "profile-error-gender" : undefined
                 }
               >
-                {genders.map((gender) => (
-                  <option key={gender}>{gender}</option>
+                <option value="" disabled>
+                  Select
+                </option>
+                {genders.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
               {fieldError("gender")}
@@ -471,14 +606,23 @@ export function ProfileForm({
             <label>
               Looking for
               <select
-                value={profile.intent}
+                value={intent}
                 onChange={(event) =>
-                  set("intent", event.target.value as Intent)
+                  setIntent(event.target.value as Intent | "")
+                }
+                aria-invalid={Boolean(fields.intent)}
+                aria-describedby={
+                  fields.intent ? "profile-error-intent" : undefined
                 }
               >
-                <option value="relationship">A relationship</option>
-                <option value="casual">Something casual</option>
-                <option value="figuring-it-out">Figuring it out</option>
+                <option value="" disabled>
+                  Select
+                </option>
+                {(Object.keys(intentLabels) as Intent[]).map((value) => (
+                  <option key={value} value={value}>
+                    {intentLabels[value]}
+                  </option>
+                ))}
               </select>
               {fieldError("intent")}
             </label>
@@ -491,24 +635,24 @@ export function ProfileForm({
                 Meet people who are <span className="label-note">Private</span>
               </legend>
               <div className="choice-grid">
-                {genders.map((gender) => (
+                {genders.map((value) => (
                   <button
                     type="button"
-                    key={gender}
-                    className={`choice ${profile.preferences.genders.includes(gender) ? "selected" : ""}`}
-                    aria-pressed={profile.preferences.genders.includes(gender)}
+                    key={value}
+                    className={`choice ${profile.preferences.genders.includes(value) ? "selected" : ""}`}
+                    aria-pressed={profile.preferences.genders.includes(value)}
                     onClick={() =>
                       set("preferences", {
                         ...profile.preferences,
-                        genders: profile.preferences.genders.includes(gender)
+                        genders: profile.preferences.genders.includes(value)
                           ? profile.preferences.genders.filter(
-                              (value) => value !== gender,
+                              (item) => item !== value,
                             )
-                          : [...profile.preferences.genders, gender],
+                          : [...profile.preferences.genders, value],
                       })
                     }
                   >
-                    {gender}
+                    {value}
                   </button>
                 ))}
               </div>
@@ -546,31 +690,75 @@ export function ProfileForm({
                   />
                 </label>
               </div>
+              <label>
+                Match radius
+                <select
+                  value={profile.preferences.radiusMiles}
+                  onChange={(event) =>
+                    set("preferences", {
+                      ...profile.preferences,
+                      radiusMiles: Number(
+                        event.target.value,
+                      ) as Profile["preferences"]["radiusMiles"],
+                    })
+                  }
+                >
+                  {radiusOptions.map((miles) => (
+                    <option key={miles} value={miles}>
+                      {miles} miles
+                    </option>
+                  ))}
+                </select>
+              </label>
               {fieldError("preferences")}
             </fieldset>
             <fieldset>
-              <legend>Choose your illustrated profile photo</legend>
-              <p className="supporting">
-                Local illustrations for this prototype.
-              </p>
-              <div className="photo-picker">
-                {Array.from(
-                  { length: 10 },
-                  (_, index) => `/demo/person-${index + 1}.svg`,
-                ).map((photo, index) => (
-                  <button
-                    type="button"
-                    className={profile.photo === photo ? "selected" : ""}
-                    aria-label={`Choose portrait ${index + 1}`}
-                    aria-pressed={profile.photo === photo}
-                    key={photo}
-                    onClick={() => set("photo", photo)}
-                  >
-                    <img src={photo} alt="" />
-                  </button>
-                ))}
-              </div>
-              {fieldError("photo")}
+              <legend>Your photos</legend>
+              <p className="supporting">Add at least one. Up to six.</p>
+              <label className="photo-upload">
+                Upload photos
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={(event) => {
+                    void readPhotos(event.target.files)
+                      .then((photos) =>
+                        set("photos", [...profile.photos, ...photos].slice(0, 6)),
+                      )
+                      .catch((cause) =>
+                        setError(
+                          cause instanceof Error
+                            ? cause.message
+                            : "Could not add photos.",
+                        ),
+                      );
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              {profile.photos.length > 0 && (
+                <div className="upload-preview">
+                  {profile.photos.map((photo, index) => (
+                    <div key={`${index}-${photo.slice(0, 32)}`}>
+                      <img src={photo} alt="" />
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() =>
+                          set(
+                            "photos",
+                            profile.photos.filter((_, i) => i !== index),
+                          )
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {fieldError("photos")}
             </fieldset>
           </>
         )}
@@ -600,6 +788,7 @@ export function ProfileForm({
     </section>
   );
 }
+
 
 export function MeScreen({
   me,
@@ -698,7 +887,7 @@ export function MeScreen({
         />
         <div>
           <h2>{me.profile!.name}</h2>
-          <p>{me.profile!.location}</p>
+          <p>{me.profile!.town || me.profile!.location}</p>
         </div>
       </div>
       <p className="bio">{me.profile!.bio}</p>

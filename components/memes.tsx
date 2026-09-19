@@ -11,6 +11,7 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import type { Meme, Reaction, Tasteprint } from "@/lib/contracts";
+import { useSwipe } from "./use-swipe";
 import {
   api,
   Empty,
@@ -24,26 +25,24 @@ import {
 export function FeedScreen({ onTaste }: { onTaste: () => void }) {
   const [memes, setMemes] = useState<Meme[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reveal, setReveal] = useState<string[]>([]);
   const reduced = useReducedMotion();
   const load = useCallback(async (next?: string | null) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api<{
-        memes: Meme[];
-        nextCursor: string | null;
-        reactionCount: number;
-      }>(`/api/feed${next ? `?cursor=${encodeURIComponent(next)}` : ""}`);
-      setMemes(data.memes);
+      const data = await api<{ memes: Meme[]; nextCursor: string | null }>(
+        next ? `/api/feed?cursor=${encodeURIComponent(next)}` : "/api/feed",
+      );
+      setMemes((previous) =>
+        next ? [...previous, ...data.memes] : data.memes,
+      );
       setCursor(data.nextCursor);
-      setCount(data.reactionCount);
     } catch (e) {
       setError((e as Error).message);
+      if (!next) setMemes([]);
     } finally {
       setLoading(false);
     }
@@ -51,12 +50,6 @@ export function FeedScreen({ onTaste }: { onTaste: () => void }) {
   useEffect(() => {
     void load();
   }, [load]);
-  useEffect(() => {
-    if (reveal.length) {
-      const timer = setTimeout(() => setReveal([]), 2400);
-      return () => clearTimeout(timer);
-    }
-  }, [reveal]);
   async function react(reaction: Reaction) {
     if (busy || !memes[0]) return;
     const current = memes[0];
@@ -65,12 +58,10 @@ export function FeedScreen({ onTaste }: { onTaste: () => void }) {
     setError(null);
     setMemes(memes.slice(1));
     try {
-      const result = await api<{ tags: string[]; reactionCount: number }>(
-        "/api/reactions",
-        { memeId: current.id, reaction },
-      );
-      setReveal(result.tags);
-      setCount(result.reactionCount);
+      await api<{ tags: string[]; reactionCount: number }>("/api/reactions", {
+        memeId: current.id,
+        reaction,
+      });
       if (before.length === 1) await load(cursor);
     } catch (e) {
       setMemes(before);
@@ -79,104 +70,80 @@ export function FeedScreen({ onTaste }: { onTaste: () => void }) {
       setBusy(false);
     }
   }
+  const swipe = useSwipe({
+    disabled: busy || !memes[0],
+    onLeft: () => void react("pass"),
+    onRight: () => void react("like"),
+    onUp: () => void react("strong-like"),
+  });
   return (
-    <section className="feed-screen">
-      <SectionTitle
-        eyebrow="A little judgment is healthy"
-        title="Funny to you?"
-        aside={
-          <button
-            className="icon-button taste-button"
-            aria-label="Open your tasteprint"
-            onClick={onTaste}
-          >
-            <ChartBar size={25} />
-          </button>
-        }
-      />
-      <div className="calibration-line">
-        <span>
-          {count < 15
-            ? "Getting your sense of humor"
-            : "Your taste keeps evolving"}
-        </span>
-        <button onClick={onTaste}>
-          {count < 15 ? `${count} / 15` : `${count} reactions`}{" "}
-          <ArrowRight size={14} />
-        </button>
-      </div>
-      <div className="calibration-track" aria-hidden>
-        <div style={{ width: `${Math.min(100, (count / 15) * 100)}%` }} />
-      </div>
+    <section className="tiktok-feed meme-feed">
+      <button
+        className="feed-floating-button"
+        aria-label="Open your tasteprint"
+        onClick={onTaste}
+      >
+        <ChartBar size={22} weight="bold" />
+      </button>
       <ErrorNote error={error} />
       {error && !memes.length && (
         <button className="button secondary full" onClick={() => void load()}>
           Try again
         </button>
       )}
-      {loading ? (
+      {loading && !memes.length ? (
         <div
-          className="meme-skeleton skeleton"
+          className="meme-skeleton skeleton tiktok-stage"
           role="status"
-          aria-label="Loading next memes"
+          aria-label="Loading memes"
         />
       ) : memes[0] ? (
         <>
-          <div className="feed-body">
-            <div className="meme-stage">
-              <AnimatePresence initial={false} mode="popLayout">
-                <motion.div
-                  className="meme-frame"
-                  key={memes[0].id}
-                  initial={{ opacity: 0, x: reduced ? 0 : 24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: reduced ? 0 : -30 }}
-                  transition={{ duration: reduced ? 0.08 : 0.2 }}
-                >
-                  <MemeMedia meme={memes[0]} />
-                </motion.div>
-              </AnimatePresence>
-            </div>
-            <p className="meme-caption">{memes[0].caption}</p>
+          <div
+            className="tiktok-stage meme-stage"
+            aria-busy={busy}
+            {...swipe}
+          >
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.div
+                className="tiktok-card meme-frame"
+                key={memes[0].id}
+                initial={{ opacity: 0, scale: reduced ? 1 : 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: reduced ? 1 : 0.96 }}
+                transition={{ duration: reduced ? 0.08 : 0.18 }}
+              >
+                <MemeMedia meme={memes[0]} fill />
+              </motion.div>
+            </AnimatePresence>
           </div>
-          <div className="reaction-area" aria-busy={busy}>
-            <div className="tag-reveal" aria-live="polite">
-              {reveal.length ? (
-                <>
-                  <span>Last meme’s ingredients</span>
-                  <Tags tags={reveal} />
-                </>
-              ) : (
-                <span>No right answers. Just your kind of wrong.</span>
-              )}
-            </div>
-            <div className="reaction-controls">
-              <button
-                className="reaction nah"
-                disabled={busy}
-                onClick={() => void react("pass")}
-              >
-                <X size={26} aria-hidden />
-                <span>Nah</span>
-              </button>
-              <button
-                className="reaction lol"
-                disabled={busy}
-                onClick={() => void react("like")}
-              >
-                <Smiley size={32} weight="bold" aria-hidden />
-                <span>LOL</span>
-              </button>
-              <button
-                className="reaction strong"
-                disabled={busy}
-                onClick={() => void react("strong-like")}
-              >
-                <Heart size={24} weight="fill" aria-hidden />
-                <span>Too good</span>
-              </button>
-            </div>
+          <div className="tiktok-dock reaction-dock" aria-busy={busy}>
+            <button
+              className="reaction-pill nah"
+              disabled={busy}
+              onClick={() => void react("pass")}
+            >
+              <X size={22} weight="bold" aria-hidden />
+              <span>Nah</span>
+            </button>
+            <button
+              className="reaction-pill lol"
+              disabled={busy}
+              onClick={() => void react("like")}
+            >
+              <Smiley size={28} weight="bold" aria-hidden />
+              <span>LOL</span>
+            </button>
+            <button
+              className="reaction-pill strong"
+              disabled={busy}
+              onClick={() => void react("strong-like")}
+            >
+              <Heart size={22} weight="fill" aria-hidden />
+              <span>Too good</span>
+            </button>
           </div>
+          <p className="swipe-hint">Swipe ← pass · → like · ↑ too good</p>
         </>
       ) : (
         !error && (
@@ -188,8 +155,7 @@ export function FeedScreen({ onTaste }: { onTaste: () => void }) {
               </button>
             }
           >
-            More nonsense is being prepared. Your current reactions are safely
-            saved.
+            More nonsense is being prepared. Your reactions are saved.
           </Empty>
         )
       )}

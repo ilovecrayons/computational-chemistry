@@ -21,7 +21,7 @@ type Route = { view: View; chat: string | null };
 const views: View[] = ["memes", "matches", "chats", "me", "taste", "admin"];
 const destinations = [
   { view: "memes", label: "Memes", icon: Smiley },
-  { view: "matches", label: "Matches", icon: Users },
+  { view: "matches", label: "Discover", icon: Users },
   { view: "chats", label: "Chats", icon: ChatCircle },
   { view: "me", label: "Me", icon: UserCircle },
 ] as const;
@@ -109,6 +109,10 @@ export default function Application() {
         : route.view;
   const inConversation =
     complete && route.view === "chats" && Boolean(route.chat);
+  const immersiveFeed =
+    complete &&
+    !inConversation &&
+    (route.view === "memes" || route.view === "matches");
 
   return (
     <div className="app-canvas">
@@ -144,7 +148,7 @@ export default function Application() {
       <div
         className={`product-surface ${complete ? "signed-in" : "welcome-surface"} ${inConversation ? "conversation-surface" : ""}`}
       >
-        {(loading || error || me) && !inConversation && (
+        {(loading || error || me) && !inConversation && !immersiveFeed && (
           <header className="app-header">
             <div className="brand">
               <Heart size={22} weight="fill" aria-hidden />
@@ -159,7 +163,7 @@ export default function Application() {
           id="main-content"
           ref={content}
           tabIndex={-1}
-          className={`screen-content ${!me && !loading && !error ? "auth-content" : ""} ${inConversation ? "chat-screen-content" : ""}`}
+          className={`screen-content ${!me && !loading && !error ? "auth-content" : ""} ${inConversation ? "chat-screen-content" : ""} ${immersiveFeed ? "immersive-content" : ""}`}
           key={`${me?.user.id || "guest"}:${revision}:${route.view}:${route.chat || ""}`}
         >
           {loading ? (

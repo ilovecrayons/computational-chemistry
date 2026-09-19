@@ -43,15 +43,20 @@ export async function requireAdmin(request: Request): Promise<{ id: string }> {
   }
   return user;
 }
+const DEFAULT_BODY_LIMIT = 16_384;
+/** Room for up to six client-compressed photos encoded as data URLs. */
+export const PROFILE_BODY_LIMIT = 8_000_000;
+
 export async function parseBody<T extends z.ZodType>(
   request: Request,
   schema: T,
+  maxBytes = DEFAULT_BODY_LIMIT,
 ): Promise<z.infer<T>> {
   const length = Number(request.headers.get("content-length") ?? 0);
-  if (length > 16_384)
+  if (length > maxBytes)
     throw new ApiFailure(413, "PAYLOAD_TOO_LARGE", "The request is too large.");
   const text = await request.text();
-  if (text.length > 16_384)
+  if (text.length > maxBytes)
     throw new ApiFailure(413, "PAYLOAD_TOO_LARGE", "The request is too large.");
   let value: unknown;
   try {
