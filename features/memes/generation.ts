@@ -55,6 +55,12 @@ const polling = (globalJobs.memeantPolls ??= new Map());
 const lastPoll = (globalJobs.memeantLastPoll ??= new Map());
 
 function publicGeneration(row: MemeRow): Generation {
+  if (row.type === "x")
+    throw new ApiFailure(
+      404,
+      "GENERATION_NOT_FOUND",
+      "External X posts are not generation jobs.",
+    );
   return {
     id: row.id,
     type: row.type,
@@ -77,6 +83,7 @@ function expireAbandoned(): void {
     .where(
       and(
         inArray(memes.status, ["queued", "generating"]),
+        inArray(memes.type, ["image", "video"]),
         isNull(memes.providerRequestId),
         lt(memes.createdAt, new Date(Date.now() - 10 * 60_000)),
       ),
@@ -92,6 +99,7 @@ function expireAbandoned(): void {
     .where(
       and(
         inArray(memes.status, ["queued", "generating"]),
+        inArray(memes.type, ["image", "video"]),
         eq(memes.type, "video"),
         lt(memes.createdAt, new Date(Date.now() - 30 * 60_000)),
       ),
@@ -208,14 +216,18 @@ export async function getGeneration(id: string): Promise<Generation> {
       "GENERATION_NOT_FOUND",
       "This generation does not exist.",
     );
+  if (row.type === "x")
+    throw new ApiFailure(
+      404,
+      "GENERATION_NOT_FOUND",
+      "External X posts are not generation jobs.",
+    );
   if (
     row.status !== "generating" ||
     row.type !== "video" ||
     !row.providerRequestId
   )
     return publicGeneration(row);
-  const pending = polling.get(id);
-  if (pending) return pending;
   if ((lastPoll.get(id) ?? 0) > Date.now() - 5_000)
     return publicGeneration(row);
   const operation = (async () => {
@@ -291,7 +303,12 @@ export function recentGenerations(): Generation[] {
   return db
     .select()
     .from(memes)
-    .where(isNotNull(memes.idempotencyKey))
+    .where(
+      and(
+        isNotNull(memes.idempotencyKey),
+        inArray(memes.type, ["image", "video"]),
+      ),
+    )
     .orderBy(desc(memes.createdAt), desc(memes.id))
     .limit(30)
     .all()

@@ -8,8 +8,8 @@ import type { Reaction } from "../../lib/contracts";
 import { loadTastes, type MemeRow } from "../matching/engine";
 import { socialMemeDTO } from "../social/social";
 import { requireProfile } from "../profile/profile";
+import { isAvailableMeme } from "./availability";
 import { TOPICS } from "./taxonomy";
-
 // A fixed library snapshot is ordered independently of reactions, so cursor pages do not
 // shift when the user reacts. The greedy coverage pass mixes topic, format, tone and chaos.
 export function coverageOrder<
@@ -100,10 +100,7 @@ export function getFeed(userId: string, cursor: string | null) {
   const reacted = new Set(history.map((reaction) => reaction.memeId));
   const available = library
     .slice(lastIndex + 1)
-    .filter(
-      (meme) =>
-        meme.status === "ready" && meme.assetPath && !reacted.has(meme.id),
-    );
+    .filter((meme) => isAvailableMeme(meme, userId) && !reacted.has(meme.id));
   const page = available.slice(0, 10);
   const last = page.at(-1);
   let displayPage: MemeRow[] = page;
@@ -149,9 +146,9 @@ export function setReaction(
   const meme = db
     .select()
     .from(memes)
-    .where(and(eq(memes.id, memeId), eq(memes.status, "ready")))
+    .where(eq(memes.id, memeId))
     .get();
-  if (!meme?.assetPath)
+  if (!meme || !isAvailableMeme(meme, userId))
     throw new ApiFailure(
       404,
       "MEME_NOT_FOUND",

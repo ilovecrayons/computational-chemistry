@@ -128,6 +128,35 @@ test("transient poll and CDN failures resume the same paid video through durable
   context.after(() => sqlite.close());
   db.insert(memes)
     .values({
+      id: "external-x-not-a-job",
+      type: "x",
+      prompt: "Official X post",
+      caption: "Text-only post",
+      tags: { absurd: 1 },
+      chaos: 1,
+      taxonomyVersion: 2,
+      status: "ready",
+      model: "official-x",
+      createdAt: new Date(),
+      xPost: {
+        id: "1234567890123456789",
+        url: "https://x.com/official/status/1234567890123456789",
+        author: "Official Account",
+        mediaType: "text",
+      },
+    })
+    .run();
+  await assert.rejects(
+    getGeneration("external-x-not-a-job"),
+    (error: unknown) =>
+      error instanceof Error &&
+      "status" in error &&
+      error.status === 404 &&
+      "code" in error &&
+      error.code === "GENERATION_NOT_FOUND",
+  );
+  db.insert(memes)
+    .values({
       id: "recoverable-video",
       type: "video",
       prompt: "A fictional illustration",
