@@ -143,14 +143,16 @@ export function migrate(database: Database.Database) {
     Number(database.pragma("foreign_keys", { simple: true })) === 1;
   database.pragma("foreign_keys = OFF");
   try {
-    database.transaction(() => {
+    const migrateV5 = database.transaction(() => {
+      if (isApplied(database, 5)) return;
       database.exec(memesV5);
       database
         .prepare(
           "INSERT INTO schema_migrations(version,applied_at) VALUES(5,?)",
         )
         .run(Date.now());
-    })();
+    });
+    migrateV5();
   } finally {
     database.pragma(`foreign_keys = ${foreignKeysEnabled ? "ON" : "OFF"}`);
   }
