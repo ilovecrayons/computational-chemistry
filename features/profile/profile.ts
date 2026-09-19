@@ -8,7 +8,7 @@ import type { Me, Preferences, Profile, PublicProfile } from "../../lib/contract
 import { TONES } from "../memes/taxonomy";
 import { ageOn } from "./age";
 
-export { ageOn } from "./age";
+export { ageOn };
 
 const dateOfBirth = z
   .string()
