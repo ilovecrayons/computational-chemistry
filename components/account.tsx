@@ -73,7 +73,9 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
     <section className={`auth-screen ${mode === "welcome" ? "" : "auth-form"}`}>
       <div className="brand">
         <Heart size={28} weight="fill" aria-hidden />
-        memeant to be<span className="brand-dot">.</span>
+        <span className="brand-name">
+          Computational Chemistry<span className="brand-dot">.</span>
+        </span>
       </div>
       <div className="welcome-art" aria-hidden>
         <span className="art-note note-one">good taste?</span>
@@ -766,8 +768,8 @@ export function MeScreen({
       )}
       <ErrorNote error={error} />
       <p className="fine-print">
-        Memeant to Be is a prototype, not a production dating service. The
-        Latent LOL Compatibility Engine ranks shared humor, not your future.
+        Computational Chemistry is a prototype, not a production dating service.
+        The Latent LOL Compatibility Engine ranks shared humor, not your future.
       </p>
       {confirmReset && (
         <Dialog title="Reset the demo?" onClose={() => setConfirmReset(false)}>

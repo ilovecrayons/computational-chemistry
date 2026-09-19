@@ -115,7 +115,10 @@ export default function Application() {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <aside className="desktop-note" aria-label="How Memeant to Be works">
+      <aside
+        className="desktop-note"
+        aria-label="How Computational Chemistry works"
+      >
         <span className="desktop-note-icon">
           <Smiley size={32} weight="bold" aria-hidden />
         </span>
@@ -145,7 +148,9 @@ export default function Application() {
           <header className="app-header">
             <div className="brand">
               <Heart size={22} weight="fill" aria-hidden />
-              memeant to be<span className="brand-dot">.</span>
+              <span className="brand-name">
+                Computational Chemistry<span className="brand-dot">.</span>
+              </span>
             </div>
             <span className="prototype-label">18+ prototype</span>
           </header>

@@ -1,4 +1,4 @@
-# Memeant to Be: Technical Implementation Plan
+# Computational Chemistry: Technical Implementation Plan
 
 ## 1. Goal
 

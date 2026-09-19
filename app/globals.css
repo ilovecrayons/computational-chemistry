@@ -160,7 +160,7 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
-  white-space: nowrap;
+  min-width: 0;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.055em;
@@ -168,9 +168,11 @@ button {
 .brand > svg {
   color: var(--accent);
 }
+.brand-name {
+  line-height: 1.15;
+}
 .brand-dot {
   color: var(--accent);
-  margin-left: -5px;
 }
 .prototype-label {
   color: var(--muted);

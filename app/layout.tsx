@@ -30,7 +30,7 @@ const spaceGrotesk = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Memeant to Be — Find your kind of weird",
+  title: "Computational Chemistry — Find your kind of weird",
   description:
     "Judge a few memes. Find someone who laughs at the same garbage. A dating prototype built around shared humor.",
   robots: { index: false, follow: false },
