@@ -15,6 +15,7 @@ type TweetWidgets = {
         conversation?: "all" | "none";
         theme?: "light" | "dark";
         align?: "left" | "center" | "right";
+        width?: number;
       },
     ) => Promise<HTMLElement | undefined>;
   };
@@ -112,11 +113,15 @@ export function XEmbed({
   caption,
   compact = false,
   active = true,
+  warm = active,
+  fit = false,
 }: {
   post: XPostLike;
   caption: string;
   compact?: boolean;
   active?: boolean;
+  warm?: boolean;
+  fit?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -124,25 +129,66 @@ export function XEmbed({
   const [retry, setRetry] = useState(0);
   const sourceUrl = useMemo(() => canonicalPostUrl(post), [post.id, post.url]);
   const valid = Boolean(sourceUrl && /^\d+$/.test(post.id));
+  const shouldMountWidget = !compact && valid && (active || warm);
 
   useEffect(() => {
     const host = containerRef.current;
-    if (!host || compact || !active || !valid) {
+    if (!host || !shouldMountWidget) {
       setStatus("idle");
+      setError(null);
       return;
     }
     let cancelled = false;
     let timer = 0;
+    let fitFrame = 0;
     const mount = document.createElement("div");
     mount.className = "x-embed-widget-mount";
     host.replaceChildren(mount);
     setStatus("loading");
     setError(null);
 
+    const fitWidget = () => {
+      fitFrame = 0;
+      if (!fit || cancelled || !host.clientWidth || !host.clientHeight) return;
+      mount.style.transform = "none";
+      const bounds = mount.getBoundingClientRect();
+      const intrinsicWidth = Math.ceil(Math.max(mount.scrollWidth, bounds.width));
+      const intrinsicHeight = Math.ceil(Math.max(mount.scrollHeight, bounds.height));
+      if (!intrinsicWidth || !intrinsicHeight) return;
+      const scale = Math.min(
+        1,
+        host.clientWidth / intrinsicWidth,
+        host.clientHeight / intrinsicHeight,
+      );
+      mount.style.transform = `scale(${scale})`;
+      mount.dataset.scale = String(scale);
+    };
+    const scheduleFit = () => {
+      if (!fit || fitFrame || cancelled) return;
+      fitFrame = window.requestAnimationFrame(fitWidget);
+    };
+    const resizeObserver = fit && typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(scheduleFit)
+      : null;
+    if (fit) {
+      resizeObserver?.observe(host);
+      resizeObserver?.observe(mount);
+    }
+    const observeIframe = () => {
+      if (!fit) return;
+      mount.querySelectorAll("iframe").forEach((iframe) => {
+        iframe.addEventListener("load", scheduleFit);
+        resizeObserver?.observe(iframe);
+      });
+      scheduleFit();
+    };
+
     const retire = (cause: unknown) => {
       if (cancelled) return;
       cancelled = true;
       window.clearTimeout(timer);
+      if (fitFrame) window.cancelAnimationFrame(fitFrame);
+      resizeObserver?.disconnect();
       mount.remove();
       setError(cause instanceof Error ? cause.message : "The original X post could not load.");
       setStatus("error");
@@ -161,6 +207,7 @@ export function XEmbed({
           dnt: true,
           conversation: "none",
           theme: "dark",
+          width: Math.min(550, Math.max(250, host.clientWidth)),
           align: "center",
         });
       })
@@ -171,6 +218,7 @@ export function XEmbed({
           return;
         }
         window.clearTimeout(timer);
+        observeIframe();
         setStatus("ready");
       })
       .catch((cause: unknown) => retire(cause));
@@ -178,12 +226,18 @@ export function XEmbed({
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      if (fitFrame) window.cancelAnimationFrame(fitFrame);
+      resizeObserver?.disconnect();
       mount.remove();
     };
-  }, [active, compact, post.id, retry, valid]);
+  }, [compact, fit, post.id, retry, shouldMountWidget, sourceUrl, valid]);
 
   return (
-    <div className={`x-embed ${compact ? "x-embed-compact" : ""} ${status === "error" ? "x-embed-error" : ""}`}>
+    <div
+      className={`x-embed ${compact ? "x-embed-compact" : ""} ${status === "error" ? "x-embed-error" : ""}`}
+      data-active={active ? "true" : "false"}
+      data-fit={fit ? "true" : "false"}
+    >
       <div className="x-embed-heading">
         <span className="x-embed-mark" aria-hidden>
           𝕏
@@ -192,7 +246,7 @@ export function XEmbed({
           Original post by <strong>{post.author || "the original author"}</strong>
         </span>
       </div>
-      {compact || !active || !valid ? (
+      {!shouldMountWidget ? (
         <div className="x-embed-fallback">
           <p>{caption || "This post is available on X."}</p>
           {!valid && <p className="x-embed-status">The post metadata is unavailable.</p>}
@@ -203,23 +257,26 @@ export function XEmbed({
       ) : (
         <>
           <div ref={containerRef} className="x-embed-frame" aria-label={`Original X post by ${post.author}`} />
-          {status === "loading" && <p className="x-embed-status" role="status">Loading the original post…</p>}
-          {status === "error" && (
-            <div className="x-embed-fallback" role="alert">
-              <p>{caption || "This original post is unavailable here."}</p>
-              <p className="x-embed-status">{error ?? "X could not load this post."}</p>
-              <div className="x-embed-actions">
-                <button type="button" onClick={() => setRetry((value) => value + 1)}>
-                  Retry
-                </button>
+          <div className="x-embed-footer">
+            {status === "loading" && <p className="x-embed-status" role="status">Loading the original post…</p>}
+            {status === "error" && (
+              <div className="x-embed-fallback" role="alert">
+                <p>{caption || "This original X post is unavailable here."}</p>
+                <p className="x-embed-status">{error ?? "X could not load this post."}</p>
+                <div className="x-embed-actions">
+                  <button type="button" onClick={() => setRetry((value) => value + 1)}>
+                    Retry
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-          <a className="x-source-link" href={sourceUrl ?? "https://x.com"} target="_blank" rel="noopener noreferrer">
-            Open original on X
-          </a>
+            )}
+            <a className="x-source-link" href={sourceUrl ?? "https://x.com"} target="_blank" rel="noopener noreferrer">
+              Open original on X
+            </a>
+          </div>
         </>
       )}
     </div>
   );
 }
+

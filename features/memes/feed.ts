@@ -143,50 +143,65 @@ export function setReaction(
 ) {
   requireProfile(userId);
   reactionInput.parse({ memeId, reaction });
-  const meme = db
-    .select()
-    .from(memes)
-    .where(eq(memes.id, memeId))
-    .get();
-  if (!meme || !isAvailableMeme(meme, userId))
-    throw new ApiFailure(
-      404,
-      "MEME_NOT_FOUND",
-      "This meme is no longer available.",
-    );
-  const now = new Date();
-  db.insert(reactions)
-    .values({ userId, memeId, reaction, createdAt: now, updatedAt: now })
-    .onConflictDoUpdate({
-      target: [reactions.userId, reactions.memeId],
-      set: { reaction, updatedAt: now },
-    })
-    .run();
-  if (
-    meme.requestedBy &&
-    meme.requestedBy !== userId &&
-    reaction !== "pass"
-  ) {
-    db.insert(notifications)
-      .values({
-        id: randomUUID(),
-        recipientId: meme.requestedBy,
-        actorId: userId,
-        type: "like",
-        message: "liked your post",
-        memeId,
-        matchId: null,
-        createdAt: now,
-        readAt: null,
+  return db.transaction((tx) => {
+    const meme = tx
+      .select()
+      .from(memes)
+      .where(eq(memes.id, memeId))
+      .get();
+    if (!meme || !isAvailableMeme(meme, userId))
+      throw new ApiFailure(
+        404,
+        "MEME_NOT_FOUND",
+        "This meme is no longer available.",
+      );
+    const previous = tx
+      .select({ reaction: reactions.reaction })
+      .from(reactions)
+      .where(
+        and(eq(reactions.userId, userId), eq(reactions.memeId, memeId)),
+      )
+      .get()?.reaction ?? null;
+    const newPositive =
+      reaction !== "pass" &&
+      previous !== "like" &&
+      previous !== "strong-like";
+    const now = new Date();
+    tx.insert(reactions)
+      .values({ userId, memeId, reaction, createdAt: now, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [reactions.userId, reactions.memeId],
+        set: { reaction, updatedAt: now },
       })
       .run();
-  }
-  return {
-    tags: Object.keys(meme.tags).slice(0, 3),
-    reactionCount: db
-      .select({ memeId: reactions.memeId })
-      .from(reactions)
-      .where(eq(reactions.userId, userId))
-      .all().length,
-  };
+    if (
+      newPositive &&
+      meme.requestedBy &&
+      meme.requestedBy !== userId
+    ) {
+      tx.insert(notifications)
+        .values({
+          id: randomUUID(),
+          recipientId: meme.requestedBy,
+          actorId: userId,
+          type: "like",
+          message: "liked your post",
+          memeId,
+          matchId: null,
+          createdAt: now,
+          readAt: null,
+        })
+        .run();
+    }
+    return {
+      tags: Object.keys(meme.tags).slice(0, 3),
+      reaction,
+      newPositive,
+      reactionCount: tx
+        .select({ memeId: reactions.memeId })
+        .from(reactions)
+        .where(eq(reactions.userId, userId))
+        .all().length,
+    };
+  });
 }

@@ -8,11 +8,13 @@ import type {
   Me,
   Meme,
   Profile,
+  Match,
   PublicProfile,
   Tasteprint,
 } from "@/lib/contracts";
 import { ageOn } from "@/features/profile/age";
 import { TONES } from "@/features/memes/taxonomy";
+import { ProfilePosts } from "./profile-posts";
 
 import {
   api,
@@ -1221,51 +1223,68 @@ export function PublicProfileScreen({
 }: {
   profileId: string;
   onBack: () => void;
-  onMatched: () => void;
+  onMatched: (matchId: string) => void;
 }) {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [posts, setPosts] = useState<Meme[]>([]);
+  const [likedPosts, setLikedPosts] = useState<Meme[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [matchStatus, setMatchStatus] = useState<
-    "idle" | "busy" | "liked" | "matched"
+    "idle" | "busy" | "matched"
   >("idle");
 
   useEffect(() => {
+    let active = true;
     setProfile(null);
     setPosts([]);
+    setLikedPosts([]);
     setMatchStatus("idle");
     setError(null);
-    api<{ profile: PublicProfile; posts: Meme[] }>(
-      `/api/profiles/${encodeURIComponent(profileId)}`,
-    )
+    api<{
+      profile: PublicProfile;
+      posts: Meme[];
+      likedPosts: Meme[];
+    }>(`/api/profiles/${encodeURIComponent(profileId)}`)
       .then((result) => {
+        if (!active) return;
         setProfile(result.profile);
         setPosts(result.posts);
+        setLikedPosts(result.likedPosts ?? []);
       })
-      .catch((cause) =>
-        setError(cause instanceof Error ? cause.message : "Profile unavailable."),
-      );
+      .catch((cause) => {
+        if (!active) return;
+        setError(cause instanceof Error ? cause.message : "Profile unavailable.");
+      });
+    return () => {
+      active = false;
+    };
   }, [profileId]);
 
   async function matchProfile() {
     if (!profile || matchStatus === "busy" || matchStatus === "matched") return;
-    const decision = matchStatus === "liked" ? "pass" : "like";
     setMatchStatus("busy");
     setError(null);
     try {
-      const result = await api<{ match: unknown }>(
+      const result = await api<{ match: Match | null }>(
         "/api/profile-decisions",
-        { targetId: profile.id, decision },
+        { targetId: profile.id, decision: "like" },
       );
       if (result.match) {
         setMatchStatus("matched");
-        onMatched();
+        onMatched(result.match.id);
       } else {
-        setMatchStatus(decision === "like" ? "liked" : "idle");
+        setMatchStatus("idle");
+        setError(
+          "This profile is not eligible for a match under your current preferences.",
+        );
       }
     } catch (cause) {
-      setMatchStatus(decision === "like" ? "idle" : "liked");
-      setError(cause instanceof Error ? cause.message : "Could not update the match invite.");
+      setMatchStatus("idle");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not send the match request.",
+      );
     }
   }
 
@@ -1278,7 +1297,7 @@ export function PublicProfileScreen({
       >
         <ArrowLeft size={24} aria-hidden />
       </button>
-      {error ? (
+      {error && !profile ? (
         <section className="session-error">
           <SectionTitle title="That profile moved on." />
           <ErrorNote error={error} />
@@ -1323,20 +1342,17 @@ export function PublicProfileScreen({
           <button
             className="button primary full profile-match-button"
             disabled={matchStatus === "busy" || matchStatus === "matched"}
-            aria-label={
-              matchStatus === "liked" ? "Unsend match invite" : undefined
-            }
             onClick={() => void matchProfile()}
           >
             {matchStatus === "busy"
               ? "Sending…"
-              : matchStatus === "liked"
-                ? "Match sent"
-                : matchStatus === "matched"
-                  ? "It’s a match"
-                  : "Match"}
+              : matchStatus === "matched"
+                ? "It’s a match"
+                : "Match"}
             {matchStatus === "idle" && <ArrowRight size={20} />}
           </button>
+          <ErrorNote error={error} />
+          <ProfilePosts posts={likedPosts} />
           <section className="profile-photos" aria-labelledby="public-photos-title">
             <div className="section-heading-row">
               <h2 id="public-photos-title">Photos</h2>

@@ -19,16 +19,18 @@ import {
   MemeMedia,
   SectionTitle,
 } from "./ui";
+import { XEmbed } from "./x-embed";
 
 type OpenComments = { postId: string; items: FeedComment[] };
 
 type CardRef = (element: HTMLElement | null) => void;
-
 export function FeedScreen({
   onViewProfile,
+  onPositiveReaction,
   postId,
 }: {
   onViewProfile: (profileId: string) => void;
+  onPositiveReaction?: (memeId: string) => void;
   postId?: string;
 }) {
   const [memes, setMemes] = useState<Meme[]>([]);
@@ -36,15 +38,21 @@ export function FeedScreen({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
-  const [reactedIds, setReactedIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [comments, setComments] = useState<OpenComments | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commentsBusy, setCommentsBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<string, HTMLElement>());
+  const visibleRatios = useRef(new Map<string, number>());
+  const activeIdRef = useRef<string | null>(null);
   const loadGeneration = useRef(0);
   const cursorRequest = useRef<{ generation: number; cursor: string } | null>(null);
+  const setCurrentId = useCallback((id: string | null) => {
+    if (activeIdRef.current === id) return;
+    activeIdRef.current = id;
+    setActiveId(id);
+  }, []);
 
   const scrollToCard = useCallback((id: string, behavior: ScrollBehavior = "smooth") => {
     cardRefs.current.get(id)?.scrollIntoView({ behavior, block: "start" });
@@ -98,7 +106,7 @@ export function FeedScreen({
         setCursor(data.nextCursor);
         if (!next) {
           const first = direct?.id ?? data.memes[0]?.id ?? null;
-          setActiveId(first);
+          setCurrentId(first);
           if (direct) {
             window.setTimeout(() => {
               if (generation === loadGeneration.current) scrollToCard(direct!.id, "auto");
@@ -121,46 +129,48 @@ export function FeedScreen({
         if (generation === loadGeneration.current) setLoading(false);
       }
     },
-    [postId, scrollToCard],
+    [postId, scrollToCard, setCurrentId],
   );
 
   useEffect(() => {
     const generation = ++loadGeneration.current;
     cursorRequest.current = null;
+    visibleRatios.current.clear();
     setMemes([]);
     setCursor(null);
-    setActiveId(null);
-    setReactedIds(new Set());
+    setCurrentId(null);
     void load(undefined, generation);
     return () => {
       if (loadGeneration.current === generation) loadGeneration.current += 1;
       cursorRequest.current = null;
     };
-  }, [load]);
+  }, [load, setCurrentId]);
 
   useEffect(() => {
     const root = scrollRef.current;
     if (!root) return;
+    visibleRatios.current.clear();
     const observer = new IntersectionObserver(
-      () => {
-        const viewport = root.getBoundingClientRect();
+      (entries) => {
+        for (const entry of entries) {
+          const id = (entry.target as HTMLElement).dataset.postId;
+          if (id) visibleRatios.current.set(id, entry.intersectionRatio);
+        }
         let visibleId: string | null = null;
-        let visibleHeight = 0;
-        for (const [id, card] of cardRefs.current) {
-          const bounds = card.getBoundingClientRect();
-          const height = Math.min(bounds.bottom, viewport.bottom) - Math.max(bounds.top, viewport.top);
-          if (height > visibleHeight) {
+        let visibleRatio = 0;
+        for (const [id, ratio] of visibleRatios.current) {
+          if (ratio > visibleRatio) {
             visibleId = id;
-            visibleHeight = height;
+            visibleRatio = ratio;
           }
         }
-        if (visibleId) setActiveId(visibleId);
+        if (visibleId) setCurrentId(visibleId);
       },
       { root, threshold: [0.2, 0.45, 0.7], rootMargin: "-8% 0px -8%" },
     );
     for (const card of cardRefs.current.values()) observer.observe(card);
     return () => observer.disconnect();
-  }, [memes]);
+  }, [memes, setCurrentId]);
 
   function registerCard(id: string): CardRef {
     return (element) => {
@@ -178,15 +188,24 @@ export function FeedScreen({
 
   async function react(id: string, reaction: Reaction) {
     const current = memes.find((meme) => meme.id === id);
-    if (!current || pendingIds.has(id) || reactedIds.has(id)) return;
+    if (!current || pendingIds.has(id) || current.reaction) return;
     setPendingIds((previous) => new Set(previous).add(id));
     setError(null);
     try {
-      await api<{ tags: string[]; reactionCount: number }>("/api/reactions", {
+      const result = await api<{
+        tags: string[];
+        reactionCount: number;
+        reaction?: Reaction | null;
+        newPositive?: boolean;
+      }>("/api/reactions", {
         memeId: id,
         reaction,
       });
-      setReactedIds((previous) => new Set(previous).add(id));
+      const persistedReaction = result.reaction === undefined ? reaction : result.reaction;
+      setMemes((previous) => previous.map((item) =>
+        item.id === id ? { ...item, reaction: persistedReaction } : item,
+      ));
+      if (result.newPositive === true) onPositiveReaction?.(id);
       nextCard(id, 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "That reaction did not save.");
@@ -286,6 +305,24 @@ export function FeedScreen({
     event.preventDefault();
     if (activeId) nextCard(activeId, event.key === "ArrowUp" || event.key === "PageUp" ? -1 : 1);
   }
+  const activeIndex = activeId ? memes.findIndex((meme) => meme.id === activeId) : 0;
+  const xEmbedWindow = new Set<string>();
+  if (activeIndex >= 0) {
+    if (memes[activeIndex]?.type === "x") xEmbedWindow.add(memes[activeIndex].id);
+    for (let index = activeIndex - 1; index >= 0; index -= 1) {
+      if (memes[index]?.type === "x") {
+        xEmbedWindow.add(memes[index].id);
+        break;
+      }
+    }
+    let nextX = 0;
+    for (let index = activeIndex + 1; index < memes.length && nextX < 3; index += 1) {
+      if (memes[index]?.type === "x") {
+        xEmbedWindow.add(memes[index].id);
+        nextX += 1;
+      }
+    }
+  }
 
   return (
     <>
@@ -312,10 +349,13 @@ export function FeedScreen({
           >
             {memes.map((meme) => {
               const pending = pendingIds.has(meme.id);
-              const reacted = reactedIds.has(meme.id);
+              const selectedReaction = meme.reaction ?? null;
+              const reacted = selectedReaction !== null;
+              const active = activeId === meme.id;
+              const warm = meme.type === "x" && xEmbedWindow.has(meme.id);
               return (
                 <article
-                  className={`feed-card ${meme.type === "x" ? "feed-card-x" : ""} ${activeId === meme.id ? "feed-post-active" : ""}`}
+                  className={`feed-card ${meme.type === "x" ? "feed-card-x" : ""} ${active ? "feed-post-active" : ""}`}
                   data-post-id={meme.id}
                   key={meme.id}
                   ref={registerCard(meme.id)}
@@ -323,7 +363,19 @@ export function FeedScreen({
                   aria-label={meme.author ? `Post by ${meme.author.name}` : "Original X post"}
                 >
                   <div className="feed-card-media">
-                    <MemeMedia meme={meme} fill active={activeId === meme.id} />
+                    {meme.type === "x" ? (
+                      <div className="meme-media fill x-media">
+                        <XEmbed
+                          post={meme.xPost}
+                          caption={meme.caption}
+                          active={active}
+                          warm={warm}
+                          fit={true}
+                        />
+                      </div>
+                    ) : (
+                      <MemeMedia meme={meme} fill active={active} />
+                    )}
                   </div>
                   {meme.type !== "x" && <div className="meme-fyp-copy">
                     {meme.author ? (
@@ -338,13 +390,31 @@ export function FeedScreen({
                     <p className="meme-fyp-caption">{meme.caption}</p>
                   </div>}
                   <div className="meme-reaction-row" aria-label="Reaction choices">
-                    <button type="button" className="feed-reaction like" disabled={pending || reacted} onClick={() => void react(meme.id, "like")}>
+                    <button
+                      type="button"
+                      className={`feed-reaction like ${selectedReaction === "like" ? "selected" : ""}`}
+                      disabled={pending || reacted}
+                      aria-pressed={selectedReaction === "like"}
+                      onClick={() => void react(meme.id, "like")}
+                    >
                       <Heart size={17} weight="fill" aria-hidden /> Like
                     </button>
-                    <button type="button" className="feed-reaction" disabled={pending || reacted} onClick={() => void react(meme.id, "pass")}>
+                    <button
+                      type="button"
+                      className={`feed-reaction ${selectedReaction === "pass" ? "selected" : ""}`}
+                      disabled={pending || reacted}
+                      aria-pressed={selectedReaction === "pass"}
+                      onClick={() => void react(meme.id, "pass")}
+                    >
                       <ArrowRight size={17} aria-hidden /> Pass
                     </button>
-                    <button type="button" className="feed-reaction strong" disabled={pending || reacted} onClick={() => void react(meme.id, "strong-like")}>
+                    <button
+                      type="button"
+                      className={`feed-reaction strong ${selectedReaction === "strong-like" ? "selected" : ""}`}
+                      disabled={pending || reacted}
+                      aria-pressed={selectedReaction === "strong-like"}
+                      onClick={() => void react(meme.id, "strong-like")}
+                    >
                       <Heart size={17} weight="bold" aria-hidden /> Strong like
                     </button>
                   </div>
@@ -362,7 +432,7 @@ export function FeedScreen({
                       <span>Share</span>
                     </button>
                   </div>
-                  {reacted && <p className="feed-reaction-state" role="status">Reaction saved. Scroll for the next original.</p>}
+                  {reacted && <p className="feed-reaction-state" role="status">Reaction saved.</p>}
                 </article>
               );
             })}

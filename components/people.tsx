@@ -6,8 +6,16 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type AnimationPlaybackControlsWithThen,
+} from "motion/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,10 +45,8 @@ import {
   SectionTitle,
   Tags,
 } from "./ui";
-import { useSwipe } from "./use-swipe";
-function pause(ms: number) {
-  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
-}
+import styles from "./discover-motion.module.css";
+
 function distanceLabel(distanceMiles: number | null): string {
   if (distanceMiles === null) return "Distance unavailable";
   const miles = Math.max(10, Math.ceil(distanceMiles / 10) * 10);
@@ -258,12 +264,43 @@ export function DiscoverScreen({
   );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [matched, setMatched] = useState<Match | null>(null);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(true);
-  const [outgoing, setOutgoing] = useState<"left" | "right" | null>(null);
   const suppressPhotoTapUntil = useRef(0);
-  const reduced = useReducedMotion();
+  const drag = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const decisionLocked = useRef(false);
+  const decisionId = useRef(0);
+  const mounted = useRef(true);
+  const panAnimations = useRef<AnimationPlaybackControlsWithThen[] | null>(
+    null,
+  );
+  const panX = useMotionValue(0);
+  const panY = useMotionValue(0);
+  const rotation = useTransform(panX, [-320, 0, 320], [-13, 0, 13]);
+  const passOpacity = useTransform(panX, [-120, -40, 0], [1, 0.25, 0]);
+  const likeOpacity = useTransform(panX, [0, 40, 120], [0, 0.25, 1]);
+  const reduced = useReducedMotion() === true;
+
+  const stopPanAnimations = useCallback(() => {
+    const animations = panAnimations.current;
+    panAnimations.current = null;
+    animations?.forEach((animation) => animation.stop());
+  }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      decisionId.current += 1;
+      drag.current = null;
+      stopPanAnimations();
+    };
+  }, [stopPanAnimations]);
+
   const load = useCallback(() => {
     setError(null);
     api<{ candidates: Candidate[] }>("/api/candidates")
@@ -282,33 +319,98 @@ export function DiscoverScreen({
       .catch((e) => setError(e.message));
   }, [me.user.id]);
   useEffect(load, [load]);
+
+  const springBack = useCallback(() => {
+    stopPanAnimations();
+    if (reduced) {
+      panX.set(0);
+      panY.set(0);
+      return Promise.resolve();
+    }
+    // Match RN Animated.spring tension=80/friction=10 in physical Motion units.
+    const animations = [
+      animate(panX, 0, { type: "spring", stiffness: 375, damping: 31 }),
+      animate(panY, 0, { type: "spring", stiffness: 375, damping: 31 }),
+    ];
+    panAnimations.current = animations;
+    return Promise.all(animations)
+      .then(() => undefined)
+      .finally(() => {
+        if (panAnimations.current === animations) {
+          panAnimations.current = null;
+        }
+      });
+  }, [panX, panY, reduced, stopPanAnimations]);
+
   async function decide(targetId: string, decision: "pass" | "like") {
-    if (busy) return;
+    if (decisionLocked.current || busy || !mounted.current) return;
+    if (decision === "like" && candidate?.id === targetId && candidate.browseOnly) {
+      void springBack();
+      return;
+    }
+    decisionLocked.current = true;
+    drag.current = null;
+    const currentDecision = ++decisionId.current;
     setBusy(true);
     setError(null);
-    const response = api<{ match: Match | null }>(
+    stopPanAnimations();
+    const candidateWidth =
+      typeof window === "undefined" ? 0 : window.innerWidth;
+    const destination = decision === "like"
+      ? candidateWidth * 1.35
+      : -candidateWidth * 1.35;
+    let exitAnimation: Promise<void>;
+    if (reduced) {
+      panX.set(destination);
+      panY.set(0);
+      exitAnimation = Promise.resolve();
+    } else {
+      const animations = [
+        animate(panX, destination, { duration: 0.24, ease: "easeOut" }),
+        animate(panY, 0, { duration: 0.24, ease: "easeOut" }),
+      ];
+      panAnimations.current = animations;
+      exitAnimation = Promise.all(animations)
+        .then(() => undefined)
+        .finally(() => {
+          if (panAnimations.current === animations) {
+            panAnimations.current = null;
+          }
+        });
+    }
+    const request = api<{ match: Match | null }>(
       "/api/profile-decisions",
       { targetId, decision },
     );
-    void response.catch(() => undefined);
+    const isCurrentDecision = () =>
+      mounted.current && decisionId.current === currentDecision;
     try {
-      setOutgoing(decision === "like" ? "right" : "left");
-      await pause(420);
-      const data = await response;
-      setCandidates((previous) => {
-        const next = previous?.filter((c) => c.id !== targetId) ?? [];
-        candidateCache.set(me.user.id, next);
-        return next;
-      });
-      setPhotoIndex(0);
-      if (data.match) setMatched(data.match);
-    } catch (e) {
-      setError((e as Error).message);
+      const [data] = await Promise.all([request, exitAnimation]);
+      if (!isCurrentDecision()) return;
+      if (decision === "like" && !data.match) {
+        await springBack();
+        if (!isCurrentDecision()) return;
+        setError("This profile is unavailable for matching with your preferences.");
+        return;
+      }
+      const next = candidates?.filter((item) => item.id !== targetId) ?? [];
+      candidateCache.set(me.user.id, next);
+      setCandidates(next);
+      if (decision === "like" && data.match) onChat(data.match.id);
+    } catch (cause) {
+      await exitAnimation.catch(() => undefined);
+      if (!isCurrentDecision()) return;
+      await springBack();
+      if (!isCurrentDecision()) return;
+      setError(cause instanceof Error ? cause.message : "Could not save that decision.");
     } finally {
-      setOutgoing(null);
-      setBusy(false);
+      if (isCurrentDecision()) {
+        decisionLocked.current = false;
+        setBusy(false);
+      }
     }
   }
+
   const candidate = candidates?.[0];
   const nextCandidate = candidates?.[1];
   const photos = (
@@ -317,7 +419,9 @@ export function DiscoverScreen({
       : candidate?.photo
         ? [candidate.photo]
         : []
+
   ).filter((photo) => photo && !photo.startsWith("/demo/"));
+
   function photoTap() {
     if (busy || !photos.length) return;
     if (Date.now() < suppressPhotoTapUntil.current) return;
@@ -327,19 +431,103 @@ export function DiscoverScreen({
     }
     setPhotoIndex((value) => (value + 1) % photos.length);
   }
-  const swipe = useSwipe({
-    disabled: busy || !candidate,
-    onLeft: () => candidate && void decide(candidate.id, "pass"),
-    onRight: () => candidate && void decide(candidate.id, "like"),
-    onUp: () => setShowDetails(true),
-    onGesture: () => {
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (
+      busy ||
+      decisionLocked.current ||
+      !candidate ||
+      drag.current ||
+      !event.isPrimary ||
+      (event.pointerType === "mouse" && event.button !== 0)
+    ) {
+      return;
+    }
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest("button, a, input, select, textarea")
+    ) {
+      return;
+    }
+    stopPanAnimations();
+    drag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const active = drag.current;
+    if (
+      !active ||
+      active.pointerId !== event.pointerId ||
+      !event.isPrimary ||
+      busy
+    ) {
+      return;
+    }
+    const dx = event.clientX - active.startX;
+    const dy = event.clientY - active.startY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
       suppressPhotoTapUntil.current = Date.now() + 400;
-    },
-  });
+      event.preventDefault();
+    }
+    panX.set(dx);
+    panY.set(dy * 0.25);
+  }
+
+  function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    const active = drag.current;
+    if (
+      !active ||
+      active.pointerId !== event.pointerId ||
+      !event.isPrimary
+    ) {
+      return;
+    }
+    drag.current = null;
+    if (busy || decisionLocked.current || !candidate) {
+      return;
+    }
+    const dx = event.clientX - active.startX;
+    const dy = event.clientY - active.startY;
+    if (Math.abs(dx) >= 120) {
+      if (dx > 0 && candidate.browseOnly) {
+        void springBack();
+      } else {
+        void decide(candidate.id, dx > 0 ? "like" : "pass");
+      }
+    } else {
+      if (Math.abs(dy) > Math.abs(dx) && dy < -48) setShowDetails(true);
+      void springBack();
+    }
+  }
+
+  function handlePointerCancel(event: ReactPointerEvent<HTMLDivElement>) {
+    const active = drag.current;
+    if (
+      !active ||
+      active.pointerId !== event.pointerId ||
+      !event.isPrimary ||
+      busy ||
+      decisionLocked.current
+    ) {
+      return;
+    }
+    drag.current = null;
+    void springBack();
+  }
+
   useEffect(() => {
+    panX.set(0);
+    panY.set(0);
     setPhotoIndex(0);
     setShowDetails(true);
-  }, [candidate?.id]);
+  }, [candidate?.id, panX, panY]);
+
   return (
     <section className="tiktok-feed discover-feed">
       <ErrorNote error={error} />
@@ -353,9 +541,16 @@ export function DiscoverScreen({
         <CardSkeleton count={1} className="discover-skeleton" />
       ) : candidate ? (
         <>
-          <div className="tiktok-stage discover-stage" {...swipe}>
+          <div
+            className={`tiktok-stage discover-stage ${styles.dragStage}`}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onDragStart={(event) => event.preventDefault()}
+          >
             {nextCandidate && (
-              <div className="discover-next-card" aria-hidden>
+              <div className={styles.peekCard} aria-hidden>
                 <ProfileVisual
                   name={nextCandidate.name}
                   src={nextCandidate.photo}
@@ -363,96 +558,118 @@ export function DiscoverScreen({
                 />
               </div>
             )}
-            <div
-              className={`discover-current-card ${outgoing ? `outgoing-${outgoing}` : ""}`}
+            <motion.div
+              key={candidate.id}
+              className={styles.dragCard}
+              style={{ x: panX, y: panY, rotate: rotation }}
             >
-            <div
-              className={`discover-photos ${showDetails ? "details-visible" : "photos-only"}`}
-              role="button"
-              tabIndex={0}
-              aria-label={
-                showDetails
-                  ? "Tap to view this profile's photos"
-                  : `View photo ${photoIndex + 1} of ${Math.max(photos.length, 1)}`
-              }
-              onClick={photoTap}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  photoTap();
+              <div
+                className={`discover-photos ${showDetails ? "details-visible" : "photos-only"}`}
+                role="button"
+                tabIndex={0}
+                aria-label={
+                  showDetails
+                    ? "Tap to view this profile's photos"
+                    : `View photo ${photoIndex + 1} of ${Math.max(photos.length, 1)}`
                 }
-              }}
-            >
-              {photos.length > 0 ? (
-                photos.map((photo, index) => (
-                  <img
-                    key={`${candidate.id}-${index}`}
-                    src={photo}
-                    alt={`${candidate.name}'s profile photo ${index + 1}`}
-                    hidden={index !== photoIndex}
+                onClick={photoTap}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    photoTap();
+                  }
+                }}
+              >
+                {photos.length > 0 ? (
+                  photos.map((photo, index) => (
+                    <img
+                      key={`${candidate.id}-${index}`}
+                      src={photo}
+                      draggable={false}
+                      alt={`${candidate.name}'s profile photo ${index + 1}`}
+                      hidden={index !== photoIndex}
+                    />
+                  ))
+                ) : (
+                  <ProfileVisual
+                    name={candidate.name}
+                    className="discover-profile-visual"
                   />
-                ))
-              ) : (
-                <ProfileVisual
-                  name={candidate.name}
-                  className="discover-profile-visual"
-                />
-              )}
-              {!showDetails && (
-                <span className="photo-mode-hint">
-                  Tap for next photo · swipe up for details
-                </span>
-              )}
-            </div>
-            {showDetails && (
-              <div className="discover-overlay">
-              <div className="discover-heading">
-                <div>
-                  <button
-                    type="button"
-                    className="discover-profile-link"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onViewProfile(candidate.id);
-                    }}
-                  >
-                    <h2>
-                      {candidate.name}, {candidate.age}
-                    </h2>
-                  </button>
-                  <p>
-                    {candidate.town || candidate.location}
-                    {candidate.stateCode
-                      ? `, ${candidate.stateCode}`
-                      : candidate.state
-                        ? `, ${candidate.state}`
-                        : ""}
-                  </p>
-                  <p className="discover-distance">
-                    {distanceLabel(candidate.distanceMiles)}
-                  </p>
-                </div>
-                <Safety
-                  targetId={candidate.id}
-                  targetName={candidate.name}
-                  onDone={(completedAction) => {
-                    if (completedAction === "block") {
-                      setCandidates((previous) => {
-                        const next =
-                          previous?.filter((item) => item.id !== candidate.id) ??
-                          [];
-                        candidateCache.set(me.user.id, next);
-                        return next;
-                      });
-                    }
-                  }}
-                />
+                )}
+                {!showDetails && (
+                  <span className="photo-mode-hint">
+                    Tap for next photo · swipe up for details
+                  </span>
+                )}
               </div>
-              {candidate.bio && <p className="discover-bio">{candidate.bio}</p>}
-              <Evidence compatibility={candidate.compatibility} />
-            </div>
+              {showDetails && (
+                <div className="discover-overlay">
+                  <div className="discover-heading">
+                    <div>
+                      <button
+                        type="button"
+                        className="discover-profile-link"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onViewProfile(candidate.id);
+                        }}
+                      >
+                        <h2>
+                          {candidate.name}, {candidate.age}
+                        </h2>
+                      </button>
+                      <p>
+                        {candidate.town || candidate.location}
+                        {candidate.stateCode
+                          ? `, ${candidate.stateCode}`
+                          : candidate.state
+                            ? `, ${candidate.state}`
+                            : ""}
+                      </p>
+                      <p className="discover-distance">
+                        {distanceLabel(candidate.distanceMiles)}
+                      </p>
+                      {candidate.browseOnly && (
+                        <p className={styles.browseOnlyNote}>
+                          Browse only · outside your matching preferences
+                        </p>
+                      )}
+                    </div>
+                    <Safety
+                      targetId={candidate.id}
+                      targetName={candidate.name}
+                      onDone={(completedAction) => {
+                        if (completedAction === "block") {
+                          setCandidates((previous) => {
+                            const next =
+                              previous?.filter((item) => item.id !== candidate.id) ??
+                              [];
+                            candidateCache.set(me.user.id, next);
+                            return next;
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                  {candidate.bio && <p className="discover-bio">{candidate.bio}</p>}
+                  <Evidence compatibility={candidate.compatibility} />
+                </div>
               )}
-            </div>
+              <motion.div
+                className={`${styles.decisionLabel} ${styles.passLabel}`}
+                style={{ opacity: passOpacity }}
+                aria-hidden
+              >
+                PASS
+              </motion.div>
+              <motion.div
+                className={`${styles.decisionLabel} ${styles.likeLabel}`}
+                style={{ opacity: likeOpacity }}
+                aria-hidden
+              >
+                LIKE
+              </motion.div>
+            </motion.div>
           </div>
           <div className="tiktok-dock reaction-dock" aria-busy={busy}>
             <button
@@ -465,7 +682,12 @@ export function DiscoverScreen({
             </button>
             <button
               className="reaction-pill lol"
-              disabled={busy}
+              disabled={busy || candidate.browseOnly}
+              aria-label={
+                candidate.browseOnly
+                  ? "Matching unavailable for browse-only profile"
+                  : "Match"
+              }
               onClick={() => void decide(candidate.id, "like")}
             >
               <Heart size={22} weight="fill" aria-hidden />
@@ -492,62 +714,6 @@ export function DiscoverScreen({
             a few more memes or update your private preferences.
           </Empty>
         )
-      )}
-      {matched && (
-        <Dialog
-          title="It’s mutual."
-          className="match-reveal"
-          onClose={() => setMatched(null)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: reduced ? 1 : 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: reduced ? 0.1 : 0.6 }}
-          >
-            <div className="matched-portraits">
-              <ProfileVisual
-                name={me.profile!.name}
-                src={me.profile!.photo}
-                className="matched-profile-mark"
-              />
-              <Heart size={32} weight="fill" aria-hidden />
-              <ProfileVisual
-                name={matched.profile.name}
-                src={matched.profile.photo}
-                className="matched-profile-mark"
-              />
-            </div>
-            <h1>
-              Same damage.
-              <br />
-              Mutual interest.
-            </h1>
-            <p>
-              You and {matched.profile.name} liked each other. That’s a better
-              start than “hey.”
-            </p>
-            {matched.compatibility.sharedMemes[0] && (
-              <div className="reveal-meme">
-                <MemeMedia
-                  meme={matched.compatibility.sharedMemes[0]}
-                  compact
-                />
-              </div>
-            )}
-            <button
-              className="button primary full"
-              onClick={() => onChat(matched.id)}
-            >
-              Say something <ArrowRight size={20} />
-            </button>
-            <button
-              className="text-button full"
-              onClick={() => setMatched(null)}
-            >
-              Keep browsing
-            </button>
-          </motion.div>
-        </Dialog>
       )}
     </section>
   );

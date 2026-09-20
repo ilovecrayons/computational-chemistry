@@ -139,18 +139,6 @@ export function decideProfile(
       })
       .run();
     if (decision === "pass" || !eligible) return { match: null };
-    const reciprocal = tx
-      .select()
-      .from(profileDecisions)
-      .where(
-        and(
-          eq(profileDecisions.actorId, targetId),
-          eq(profileDecisions.targetId, userId),
-          eq(profileDecisions.decision, "like"),
-        ),
-      )
-      .get();
-    if (!reciprocal) return { match: null };
     const { tastes, library } = loadTastes();
     const row = {
       id: randomUUID(),

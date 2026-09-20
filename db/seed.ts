@@ -412,10 +412,13 @@ export const demoPersonas = [
   name: profileNames[person.slug] ?? person.name,
   id: `demo-${person.slug}`,
   email: `${person.slug}@demo.local`,
-  photo: profilePhoto(person.slug, 0),
-  photos: Array.from({ length: 10 }, (_, index) =>
-    profilePhoto(person.slug, index),
-  ),
+  photo: person.slug === "alex" ? "" : profilePhoto(person.slug, 0),
+  photos:
+    person.slug === "alex"
+      ? []
+      : Array.from({ length: 10 }, (_, index) =>
+          profilePhoto(person.slug, index),
+        ),
 }));
 export async function seedDemo(): Promise<void> {
   if (!config.demoMode)
@@ -424,7 +427,7 @@ export async function seedDemo(): Promise<void> {
       "DEMO_DISABLED",
       "Set DEMO_MODE=true to seed fictional demo identities.",
     );
-  seedXPosts();
+  seedXPosts({ cleanupLegacy: true });
   const password = await hashPassword(DEMO_PASSWORD);
   const ids = demoPersonas.map((person) => person.id);
   const now = new Date("2026-09-01T12:00:00.000Z");
