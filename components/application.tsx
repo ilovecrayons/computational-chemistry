@@ -102,6 +102,9 @@ export default function Application() {
     string | null
   >(null);
   const [sessionMatchOpen, setSessionMatchOpen] = useState(false);
+  const [sessionOpenerMemeId, setSessionOpenerMemeId] = useState<string | null>(
+    null,
+  );
   const [sessionMatchUserId, setSessionMatchUserId] = useState<string | null>(
     null,
   );
@@ -177,6 +180,7 @@ export default function Application() {
     positiveMemeIds.current.clear();
     positiveCount.current = 0;
     sessionPopupShown.current = false;
+    setSessionOpenerMemeId(null);
     setSessionCandidate(null);
     setSessionCandidateLoading(false);
     setSessionCandidateError(null);
@@ -245,6 +249,7 @@ export default function Application() {
       if (positiveCount.current !== 5) return;
       sessionPopupShown.current = true;
       sessionPopupGeneration.current = generation;
+      setSessionOpenerMemeId(memeId);
       setSessionMatchUserId(userId);
       setSessionMatchOpen(true);
       void loadSessionCandidate();
@@ -292,6 +297,7 @@ export default function Application() {
       )
         return;
       setSessionMatchOpen(false);
+      setSessionOpenerMemeId(null);
       navigate("chats", matchId);
     },
     [
@@ -435,10 +441,14 @@ export default function Application() {
         {sessionMatchVisible && (
           <SessionMatch
             candidate={sessionCandidate}
+            openerMemeId={sessionOpenerMemeId}
             loading={sessionCandidateLoading}
             error={sessionCandidateError}
             onRetry={() => void loadSessionCandidate()}
-            onClose={() => setSessionMatchOpen(false)}
+            onClose={() => {
+              setSessionMatchOpen(false);
+              setSessionOpenerMemeId(null);
+            }}
             onMatched={handleSessionMatched}
           />
         )}

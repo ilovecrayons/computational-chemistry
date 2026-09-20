@@ -14,6 +14,7 @@ import {
 
 export function SessionMatch({
   candidate,
+  openerMemeId,
   loading,
   error,
   onRetry,
@@ -21,6 +22,7 @@ export function SessionMatch({
   onMatched,
 }: {
   candidate: Candidate | null;
+  openerMemeId: string | null;
   loading: boolean;
   error: string | null;
   onRetry: () => void;
@@ -42,7 +44,11 @@ export function SessionMatch({
     try {
       const result = await api<{ match: Match | null }>(
         "/api/profile-decisions",
-        { targetId: candidate.id, decision: "like" },
+        {
+          targetId: candidate.id,
+          decision: "like",
+          ...(openerMemeId ? { openerMemeId } : {}),
+        },
       );
       if (!result.match) {
         setDecisionError(

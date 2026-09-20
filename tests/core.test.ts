@@ -398,6 +398,69 @@ test("unilateral matches authorize both chat members and block closes chat immed
   assert.deepEqual(matching.getMatches("a"), []);
 });
 
+test("fifth opener persists the exact meme and only the actor auto-attaches it", () => {
+  like("a", "red", 1);
+  const match = matching.decideProfile("a", "close", "like", "red-00").match!;
+  assert.equal(match.openerMeme?.id, "red-00");
+  assert.equal(match.openerPendingForMe, true);
+  assert.equal(matching.getMatches("close")[0].openerPendingForMe, false);
+
+  const targetFirst = chat.sendMessage("close", match.id, {
+    body: "I will not consume your opener.",
+  }).message;
+  assert.equal(targetFirst.memeId, null);
+  assert.equal(targetFirst.meme, null);
+  assert.equal(chat.getMessages("a", match.id, null).match.openerPendingForMe, true);
+
+  const actorFirst = chat.sendMessage("a", match.id, {
+    body: "Here is the context.",
+  }).message;
+  assert.equal(actorFirst.memeId, "red-00");
+  assert.equal(actorFirst.meme?.id, "red-00");
+  assert.equal(actorFirst.meme?.src, "/api/media/red-00");
+  assert.equal(matching.getMatches("a")[0].openerPendingForMe, false);
+
+  const actorSecond = chat.sendMessage("a", match.id, {
+    body: "No second automatic attachment.",
+  }).message;
+  assert.equal(actorSecond.memeId, null);
+  assert.equal(actorSecond.meme, null);
+  assert.equal(
+    chat
+      .getMessages("close", match.id, null)
+      .messages.find((message) => message.id === actorFirst.id)?.meme?.id,
+    "red-00",
+  );
+});
+
+test("unliked or forged opener memes cannot create a fifth-popup match", () => {
+  assert.throws(() =>
+    matching.decideProfile("a", "close", "like", "red-00"),
+  );
+  assert.deepEqual(matching.getMatches("a"), []);
+});
+
+test("ordinary matches keep text-only sends and stale opener media never bricks chat", () => {
+  const ordinary = matchPair();
+  const ordinaryMessage = chat.sendMessage("a", ordinary.id, {
+    body: "Ordinary match context.",
+  }).message;
+  assert.equal(ordinaryMessage.memeId, null);
+  assert.equal(ordinaryMessage.meme, null);
+
+  like("a", "red", 1);
+  const opener = matching.decideProfile("a", "far", "like", "red-00").match!;
+  database.sqlite
+    .prepare("UPDATE memes SET status = 'expired' WHERE id = ?")
+    .run("red-00");
+  const staleMessage = chat.sendMessage("a", opener.id, {
+    body: "The opener expired, but chat still works.",
+  }).message;
+  assert.equal(staleMessage.memeId, null);
+  assert.equal(staleMessage.meme, null);
+  assert.equal(matching.getMatches("a").find((match) => match.id === opener.id)?.openerPendingForMe, false);
+});
+
 test("unmatching a unilateral match revokes chat authorization for both members", () => {
   const match = matching.decideProfile("a", "close", "like").match!;
   assert.deepEqual(chat.getMessages("a", match.id, null).messages, []);

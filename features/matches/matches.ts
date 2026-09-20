@@ -5,10 +5,12 @@ import { db } from "../../db";
 import {
   blocks,
   matches,
+  memes,
   messages,
   notifications,
   profileDecisions,
   profiles,
+  reactions,
   reports,
   users,
 } from "../../db/schema";
@@ -18,11 +20,32 @@ import {
   blockedPair,
   compatibility,
   loadTastes,
+  memeDTO,
   mutuallyEligible,
 } from "../matching/engine";
+import { isAvailableMeme } from "../memes/availability";
 import { publicProfile, requireProfile } from "../profile/profile";
 
 export type MatchRow = typeof matches.$inferSelect;
+function openerMemeDTO(row: MatchRow): Match["openerMeme"] {
+  if (!row.openerMemeId) return null;
+  const meme = db
+    .select()
+    .from(memes)
+    .where(eq(memes.id, row.openerMemeId))
+    .get();
+  if (
+    !meme ||
+    !isAvailableMeme(meme, row.userA) ||
+    !isAvailableMeme(meme, row.userB)
+  )
+    return null;
+  try {
+    return memeDTO(meme);
+  } catch {
+    return null;
+  }
+}
 export function matchDTO(row: MatchRow, userId: string): Match {
   const otherId = row.userA === userId ? row.userB : row.userA;
   const other = db
@@ -50,6 +73,12 @@ export function matchDTO(row: MatchRow, userId: string): Match {
     createdAt: row.createdAt.toISOString(),
     lastActivityAt: (last?.createdAt ?? row.createdAt).toISOString(),
     lastMessage: last?.body ?? null,
+    openerMeme: openerMemeDTO(row),
+    openerPendingForMe: Boolean(
+      row.openerMemeId &&
+        row.openerSenderId === userId &&
+        !row.openerConsumedAt,
+    ),
   };
 }
 export function authorizedMatch(userId: string, matchId: string): MatchRow {
@@ -92,13 +121,15 @@ export function getMatches(userId: string): Match[] {
 export const decisionInput = z.object({
   targetId: z.string().min(1).max(100),
   decision: z.enum(["like", "pass"]),
+  openerMemeId: z.string().min(1).max(100).optional(),
 });
 export function decideProfile(
   userId: string,
   targetId: string,
   decision: "like" | "pass",
+  openerMemeId?: string,
 ): { match: Match | null } {
-  decisionInput.parse({ targetId, decision });
+  decisionInput.parse({ targetId, decision, openerMemeId });
   return db.transaction((tx) => {
     const me = requireProfile(userId);
     if (targetId === userId || blockedPair(userId, targetId))
@@ -130,6 +161,40 @@ export function decideProfile(
         "This profile is not available.",
       );
     const eligible = mutuallyEligible(me, other);
+    let validatedOpenerId: string | null = null;
+    if (decision === "like" && eligible && openerMemeId) {
+      const opener = tx
+        .select()
+        .from(memes)
+        .where(eq(memes.id, openerMemeId))
+        .get();
+      const actorReaction = tx
+        .select({ reaction: reactions.reaction })
+        .from(reactions)
+        .where(
+          and(
+            eq(reactions.userId, userId),
+            eq(reactions.memeId, openerMemeId),
+            or(
+              eq(reactions.reaction, "like"),
+              eq(reactions.reaction, "strong-like"),
+            ),
+          ),
+        )
+        .get();
+      if (
+        !opener ||
+        !actorReaction ||
+        !isAvailableMeme(opener, userId) ||
+        !isAvailableMeme(opener, targetId)
+      )
+        throw new ApiFailure(
+          403,
+          "OPENER_MEME_NOT_ALLOWED",
+          "That opener meme is not available for this match.",
+        );
+      validatedOpenerId = opener.id;
+    }
     const now = new Date();
     tx.insert(profileDecisions)
       .values({ actorId: userId, targetId, decision, createdAt: now })
@@ -151,6 +216,9 @@ export function decideProfile(
       ),
       createdAt: now,
       unmatchedAt: null,
+      openerMemeId: validatedOpenerId,
+      openerSenderId: validatedOpenerId ? userId : null,
+      openerConsumedAt: null,
     };
     tx.insert(matches)
       .values(row)

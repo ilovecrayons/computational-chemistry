@@ -1700,6 +1700,21 @@ label > .label-note {
   color: var(--muted);
   margin-top: 4px;
 }
+.message-meme {
+  width: min(100%, 260px);
+  margin: 8px 0 2px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.message-meme .meme-media {
+  width: 100%;
+  max-height: 220px;
+}
+.message-meme .meme-media img,
+.message-meme .meme-media video {
+  max-height: 220px;
+  object-fit: contain;
+}
 .message-reference {
   display: block;
   font-size: 11px;
@@ -1714,6 +1729,12 @@ label > .label-note {
   padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
   background: var(--surface);
   border-top: 1px solid var(--divider);
+}
+.message-opener-note {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
 }
 .composer .check-row {
   padding-bottom: 4px;

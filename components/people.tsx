@@ -903,8 +903,11 @@ export function Conversation({
     const timer = setInterval(() => void load(undefined, true), 4000);
     return () => clearInterval(timer);
   }, [load, unavailable]);
+  const openerMeme = match?.openerMeme ?? null;
+  const openerPending = Boolean(match?.openerPendingForMe);
   const sharedMeme = match?.compatibility.sharedMemes[0];
-  const opener = sharedMeme
+  const contextMeme = openerMeme ?? sharedMeme;
+  const opener = contextMeme
     ? "Explain why this destroyed both of us."
     : "What’s the last thing that made you laugh?";
   async function send(event: FormEvent) {
@@ -917,7 +920,7 @@ export function Conversation({
         `/api/matches/${encodeURIComponent(id)}/messages`,
         {
           body: body.trim(),
-          ...(messages.length === 0 && share && sharedMeme
+          ...(messages.length === 0 && !openerPending && share && sharedMeme
             ? { memeId: sharedMeme.id }
             : {}),
         },
@@ -926,6 +929,11 @@ export function Conversation({
         ...previous,
         messages: merge(previous.messages, [result.message]),
       }));
+      if (openerPending) {
+        setMatch((previous) =>
+          previous ? { ...previous, openerPendingForMe: false } : previous,
+        );
+      }
       setBody("");
       setShare(false);
       requestAnimationFrame(() =>
@@ -999,20 +1007,35 @@ export function Conversation({
               {messages.length === 0 && (
                 <div className="chat-context">
                   <p className="eyebrow">
-                    {sharedMeme
-                      ? "Your first inside joke"
-                      : "A little mutual interest"}
+                    {openerMeme
+                      ? "Your opening meme"
+                      : sharedMeme
+                        ? "Your first inside joke"
+                        : "A little mutual interest"}
                   </p>
-                  {sharedMeme && <MemeMedia meme={sharedMeme} compact />}
+                  {contextMeme && (
+                    <MemeMedia
+                      meme={contextMeme}
+                      compact={contextMeme.type !== "video"}
+                    />
+                  )}
                   <h2>
-                    {sharedMeme
-                      ? "Explain yourselves."
-                      : "You already have a start."}
+                    {openerPending
+                      ? "Lead with the laugh."
+                      : openerMeme
+                        ? "This started things."
+                        : sharedMeme
+                          ? "Explain yourselves."
+                          : "You already have a start."}
                   </h2>
                   <p>
-                    {sharedMeme
-                      ? "You both found this funny. That feels like a conversation."
-                      : "You both liked each other. Find out what makes them laugh."}
+                    {openerPending
+                      ? "This meme will be included with your first message."
+                      : openerMeme
+                        ? "This meme opened the match. Use it to start the conversation."
+                        : sharedMeme
+                          ? "You both found this funny. That feels like a conversation."
+                          : "You both liked each other. Find out what makes them laugh."}
                   </p>
                   <button
                     className="suggested-opener"
@@ -1025,7 +1048,9 @@ export function Conversation({
                     “{opener}”<ArrowRight size={18} />
                   </button>
                   <span className="supporting">
-                    Tap to edit. Nothing sends automatically.
+                    {openerPending
+                      ? "Tap to edit. The meme is included when you send."
+                      : "Tap to edit. Nothing sends automatically."}
                   </span>
                 </div>
               )}
@@ -1034,10 +1059,22 @@ export function Conversation({
                   key={message.id}
                   className={`message ${message.senderId === me.user.id ? "mine" : "theirs"}`}
                 >
-                  {message.memeId && (
-                    <span className="message-reference">
-                      About your shared meme
-                    </span>
+                  {message.meme ? (
+                    <>
+                      <span className="message-reference">Shared meme</span>
+                      <div className="message-meme" data-meme-id={message.meme.id}>
+                        <MemeMedia
+                          meme={message.meme}
+                          compact={message.meme.type !== "video"}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    message.memeId && (
+                      <span className="message-reference">
+                        About your shared meme
+                      </span>
+                    )
                   )}
                   <p>{message.body}</p>
                   <time dateTime={message.createdAt}>
@@ -1050,8 +1087,14 @@ export function Conversation({
               ))}
             </div>
             <form className="composer" onSubmit={send} aria-busy={busy}>
+              {openerPending && (
+                <p className="message-opener-note" role="status">
+                  The meme that sparked this match will be included with your
+                  first message.
+                </p>
+              )}
               <ErrorNote error={sendError} />
-              {messages.length === 0 && sharedMeme && (
+              {messages.length === 0 && !openerPending && sharedMeme && (
                 <label className="check-row">
                   <input
                     type="checkbox"

@@ -155,7 +155,7 @@ test("fresh sync replaces only legacy seeds and keeps local dependents plus offi
   );
 });
 
-test("version four upgrade preserves foreign-key meme dependents and restores foreign keys on failure", () => {
+test("legacy upgrades preserve meme dependents and add match opener context", () => {
   const legacy = new Database(":memory:");
   legacy.pragma("foreign_keys = ON");
   legacy.exec(`
@@ -180,6 +180,14 @@ test("version four upgrade preserves foreign-key meme dependents and restores fo
       completed_at INTEGER,
       idempotency_key TEXT UNIQUE,
       requested_by TEXT
+    );
+    CREATE TABLE matches (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_a TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_b TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      compatibility TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      unmatched_at INTEGER
     );
     CREATE TABLE reactions (
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -213,7 +221,18 @@ test("version four upgrade preserves foreign-key meme dependents and restores fo
 
   migrate(legacy);
   assert.equal(Number(legacy.pragma("foreign_keys", { simple: true })), 1);
-  assert.equal(legacy.prepare("SELECT version FROM schema_migrations WHERE version = 5").get() !== undefined, true);
+  assert.equal(
+    legacy
+      .prepare("SELECT version FROM schema_migrations WHERE version = 6")
+      .get() !== undefined,
+    true,
+  );
+  assert.deepEqual(
+    (
+      legacy.pragma("table_info(matches)") as Array<{ name: string }>
+    ).slice(-3).map(({ name }) => name),
+    ["opener_meme_id", "opener_sender_id", "opener_consumed_at"],
+  );
   assert.equal(
     countRows(
       legacy,
