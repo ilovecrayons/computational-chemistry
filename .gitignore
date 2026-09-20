@@ -6,3 +6,15 @@ data/
 playwright-report/
 test-results/
 *.tsbuildinfo
+# SQLite runtime sidecars; keep tracked schema, seed, and provenance files visible.
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+
+# Local verification output, without ignoring source archives or provenance.
+coverage/
+.playwright/
+*.trace.zip

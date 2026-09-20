@@ -22,6 +22,17 @@ type XPostSeedFile = {
     searchedAt: string;
     model: string;
     selection: string;
+    provenance?: {
+      path: string;
+      endpoint: string;
+      model: string;
+      discoveredAt?: string;
+      recordedRequests?: number;
+      completedResponses?: number;
+      callAccounting?: string;
+      citations: number;
+      rawResponses: number;
+    };
   };
   posts: XPostSeedRecord[];
 };
@@ -29,12 +40,18 @@ type XPostSeedFile = {
 const seedFile = source as XPostSeedFile;
 const statusUrl = /^https:\/\/x\.com\/[^/]+\/status\/(\d+)$/;
 const categorySet = new Set<string>(TOPICS);
+const EXPECTED_X_POST_SEED_COUNT = 239;
 
 function records(): Array<
   XPostSeedRecord & { id: string; statusId: string; xPost: XPost }
 > {
-  if (seedFile.version !== 1 || seedFile.posts.length !== 39)
-    throw new Error("Invalid official X post seed file: expected 39 posts.");
+  if (
+    seedFile.version !== 1 ||
+    seedFile.posts.length !== EXPECTED_X_POST_SEED_COUNT
+  )
+    throw new Error(
+      `Invalid official X post seed file: expected ${EXPECTED_X_POST_SEED_COUNT} posts.`,
+    );
   const createdIds = new Set<string>();
   return seedFile.posts.map((post) => {
     if (!categorySet.has(post.category))
@@ -64,36 +81,39 @@ const seedTimestamp = new Date(seedFile.source.searchedAt);
 if (Number.isNaN(seedTimestamp.valueOf()))
   throw new Error("Invalid official X post seed timestamp.");
 
-export const X_POST_SEED_COUNT = 39;
+export const X_POST_SEED_COUNT = EXPECTED_X_POST_SEED_COUNT;
 
-/** Synchronize the approved official X rows without touching unrelated local posts. */
-export function seedXPosts(): void {
+type SeedOptions = { cleanupLegacy?: boolean };
+
+/** Synchronize official X rows; legacy cleanup is opt-in for full demo resets. */
+export function seedXPosts(options: SeedOptions = { cleanupLegacy: false }): void {
   const posts = records();
   const ids = posts.map((post) => post.id);
   db.transaction((tx) => {
-    const obsolete = tx
-      .select({ id: memes.id })
-      .from(memes)
-      .where(
-        or(
-          and(isNull(memes.requestedBy), like(memes.id, "library-%")),
-          and(
-            isNull(memes.requestedBy),
-            sql`${memes.id} GLOB 'meme-[0-9][0-9][0-9]'`,
+    if (options.cleanupLegacy === true) {
+      const obsolete = tx
+        .select({ id: memes.id })
+        .from(memes)
+        .where(
+          or(
+            and(isNull(memes.requestedBy), like(memes.id, "library-%")),
+            and(
+              isNull(memes.requestedBy),
+              sql`${memes.id} GLOB 'meme-[0-9][0-9][0-9]'`,
+            ),
+            and(
+              isNull(memes.requestedBy),
+              like(memes.id, "x-%"),
+              notInArray(memes.id, ids),
+            ),
           ),
-          and(
-            isNull(memes.requestedBy),
-            like(memes.id, "x-%"),
-            notInArray(memes.id, ids),
-          ),
-        ),
-      )
-      .all();
-    if (obsolete.length)
-      tx.delete(memes)
-        .where(inArray(memes.id, obsolete.map((row) => row.id)))
-        .run();
-
+        )
+        .all();
+      if (obsolete.length)
+        tx.delete(memes)
+          .where(inArray(memes.id, obsolete.map((row) => row.id)))
+          .run();
+    }
     for (const [index, post] of posts.entries()) {
       const tags: Record<string, number> = { [post.category]: 1 };
       tx.insert(memes)

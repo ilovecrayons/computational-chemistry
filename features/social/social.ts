@@ -16,7 +16,7 @@ import type {
   FeedComment,
   Meme,
 } from "../../lib/contracts";
-import { memeDTO, type MemeRow } from "../matching/engine";
+import { blockedPair, memeDTO, type MemeRow } from "../matching/engine";
 import { requireProfile } from "../profile/profile";
 import { isAvailableMeme } from "../memes/availability";
 
@@ -50,6 +50,16 @@ export function socialMemeDTO(row: MemeRow, viewerId: string): Meme {
     .from(postComments)
     .where(eq(postComments.memeId, row.id))
     .all().length;
+  const viewerReaction = db
+    .select({ reaction: reactions.reaction })
+    .from(reactions)
+    .where(
+      and(
+        eq(reactions.userId, viewerId),
+        eq(reactions.memeId, row.id),
+      ),
+    )
+    .get()?.reaction ?? null;
   const saved = Boolean(
     db
       .select({ memeId: savedMemes.memeId })
@@ -75,6 +85,7 @@ export function socialMemeDTO(row: MemeRow, viewerId: string): Meme {
     likeCount: likes,
     commentCount,
     saved,
+    reaction: viewerReaction,
   };
 }
 
@@ -197,6 +208,7 @@ export function getSavedMemes(userId: string): Meme[] {
 
 export function getUserPosts(userId: string, viewerId = userId): Meme[] {
   requireProfile(userId);
+  if (viewerId !== userId && blockedPair(userId, viewerId)) return [];
   return db
     .select()
     .from(memes)
@@ -206,6 +218,28 @@ export function getUserPosts(userId: string, viewerId = userId): Meme[] {
     .all()
     .filter((meme) => isAvailableMeme(meme, viewerId))
     .map((meme) => socialMemeDTO(meme, viewerId));
+}
+export function getUserLikedPosts(userId: string, viewerId = userId): Meme[] {
+  requireProfile(userId);
+  if (viewerId !== userId && blockedPair(userId, viewerId)) return [];
+  return db
+    .select({ meme: memes })
+    .from(reactions)
+    .innerJoin(memes, eq(reactions.memeId, memes.id))
+    .where(
+      and(
+        eq(reactions.userId, userId),
+        or(
+          eq(reactions.reaction, "like"),
+          eq(reactions.reaction, "strong-like"),
+        ),
+      ),
+    )
+    .orderBy(desc(reactions.updatedAt), desc(reactions.memeId))
+    .all()
+    .filter(({ meme }) => isAvailableMeme(meme, viewerId))
+    .slice(0, 100)
+    .map(({ meme }) => socialMemeDTO(meme, viewerId));
 }
 
 export function getNotifications(userId: string): AppNotification[] {

@@ -4,7 +4,18 @@
     "path": "db/x-post-search-trial/results.json",
     "searchedAt": "2026-09-19T21:50:19.779Z",
     "model": "grok-4.6",
-    "selection": "Approved Top result, one post per ranked result, preserving source URL, author, text, and media type."
+    "selection": "Approved Top-ranked X Search results, one post per result, preserving citation-grounded canonical URL, author, verbatim text, and media type.",
+    "provenance": {
+      "path": "db/x-post-discovery.json",
+      "endpoint": "https://api.x.ai/v1/responses",
+      "model": "grok-4.6",
+      "discoveredAt": "2026-09-20T04:55:32.665135Z",
+      "recordedRequests": 37,
+      "completedResponses": 35,
+      "callAccounting": "Recorded request attempts and completed responses only; unrecorded or abandoned calls are unknown.",
+      "citations": 1024,
+      "rawResponses": 35
+    }
   },
   "posts": [
     {
@@ -278,6 +289,1406 @@
       "url": "https://x.com/iwtdlaltalt/status/1839715886560641123",
       "author": "@iwtdlaltalt",
       "text": "LGBT = BAD 💀💀💀💀💀\nPHONK + PACKGOD = SIGMA 🍷🗿",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/bourglor/status/2056048691107029168",
+      "author": "himejofries 👩‍❤️‍💋‍👩 🐈 🍟",
+      "text": "Guy Inserting data into his brain scrolling twitter brainrot twitter doomscroll doomscrolling scroll from two phones on his ears and then answering  2+ 2 with 3 on the chalkboard stantwt reaction video meme",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/LiquidationTM/status/2101412261760028971",
+      "author": "Wartortle",
+      "text": "Jotaro Mango #funny #humor #meme #memes #shitpost #shitposting #foryou #boost #boostpost #LOL #MemesDaily #DailyHumor #FunniestVideo #dank #dankhumor #dankmemes #brainrot #brainrotfunny #brainrothumor #brainrotmemes #wtf #wtfhumor #wtfvids #jjbahumor #jjbamemes #jjbafunny #latino",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/ILoveVappy/status/2101407439145029955",
+      "author": "𝓜𝓮𝓸𝔀𝓼𝓬𝓪𝓻𝓪𝓭𝓪🩵🤍💜",
+      "text": "Fever dream #skibidi #brainrot #meme #shitpost",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/shahh/status/1917058008120512712",
+      "author": "shah",
+      "text": "Italian brainrot one of the best new gen memes and it’s not even close",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/goart2510/status/2101100430474584265",
+      "author": "goart2510",
+      "text": "Expie dancing (brainrot meme 3d animation)",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/UdinAIBrainrot/status/2100861524516442604",
+      "author": "Udin",
+      "text": "Good morning can we make brainrots great again today ?",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/Gez_L0/status/2020732689758732743",
+      "author": "oSnapItsGez‼️",
+      "text": "This whole comic is just gonna be a random idea i got while i was watching brainrot vids at 3am",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/aayuxsushi/status/1893616018301264120",
+      "author": "aayu ☆ XDH=6",
+      "text": "Xdinary heroes as random brainrot memes⁉️ A thread: \n\n(Lowkey picked the memes based on the pics i used of them)",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/Frank_67x/status/2099626216739455371",
+      "author": "Frank",
+      "text": "Every meme we’ve ran to millions has had one thing in common: BRAINROT.\n\nThe internet is brainrot. Memecoins are brainrot. Our timelines are brainrot.\n\nStop overthinking it.\n\nBrainrot is the meta.\n\nhttps://www.tiktok.com/search?q=brainrot&t=1789424781762",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/Younghogey/status/2100256281005085111",
+      "author": "Hogey.sol(re/tard)🧩",
+      "text": "I just wanted to add to the brainrot memes and since no one has done this one yet. Let me introduce to you halleberry",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/RealFLHacks/status/1740862284698906628",
+      "author": "fanum tax buttsex",
+      "text": "Actual skibidi toilet analysis thread by someone who actually watched the series and not a basic plot summary by a snarky shit munching twitter user \n\ni am skibidi toilets strongest soildier",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/_imn0superman/status/1804349104522207740",
+      "author": "clocky matt johnson",
+      "text": "he looks like he knows the skibidi toilet lore",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/gayest_tone/status/1688619285952843776",
+      "author": "Gayest Tone",
+      "text": "Skibidi toilet is a good litmus test for which millennials want to be really hyperbolic about “THE KIDS ARE SO WEIRD” and which ones can just go “oh it’s just a GMod skit we had those back in the day too”",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/AvengerSpencer/status/1962305452076863847",
+      "author": "AvengerSpencer",
+      "text": "How did bro fall for the Skibidi toilet?!?",
+      "mediaType": "video"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/Macko_MT/status/1869761390770368796",
+      "author": "macko ❤️",
+      "text": "Wanna see your main curb stomp Skibidi Toilet? Comment a skin I may create you an image like this 😁\n\n#FortniteArt #FortniteC6S1鬼Hunters",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/DiscussingFilm/status/1925241279849374090",
+      "author": "DiscussingFilm",
+      "text": "First teaser for ‘SKIBIDI TOILET’\n\nDirected by Michael Bay.",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/MarcusL_Crassus/status/1692621347669614920",
+      "author": "🌴🦜 Crassus 🍹🌺",
+      "text": "Look at what they've done to my SCP Foundation dude it's become a content farm for kids on ipads playing roblox and watching Skibidi toilet",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/therealtic2292/status/2090253914067112076",
+      "author": "untitled uhhh idfk anything atp fan (#1 Seth fan)",
+      "text": "did we genuienly just reset skibidi toilet",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/francis_gif/status/2090478969380311361",
+      "author": "|| francis.gif 🇮🇪 || (1/5) €OMMS CLOSED ||",
+      "text": "skibidi toilet d-sides",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/bourglor/status/2071197970968564162",
+      "author": "himejofries 👩‍❤️‍💋‍👩 🐈 🍟",
+      "text": "boy pretending to be skibidi toilet with his real life object in the bathroom play pretend playing skibidi boop boop yes yes gen alpha / reaction video meme",
+      "mediaType": "video"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/tanamy_/status/2099255054859673948",
+      "author": "Tanamy I Vgen Comm Open ♡",
+      "text": "Free meme reaction , use it when you see a larper 😌",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/Zufrieren_/status/2046873360299327636",
+      "author": "Hannes",
+      "text": "Top 10 memes that will make you the coolest Larper in Larpwards University",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/linaposting/status/1497598099048464386",
+      "author": "lina 🇵🇸🇦🇲",
+      "text": "this is the funniest use of the term 'LARPer' I have ever seen",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/RawbertBeef/status/2039337572992770115",
+      "author": "The Green Kasey 🎃",
+      "text": "The concept of larping as a socially awkward loser who loves comics…",
+      "mediaType": "video"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/yaemikussy69/status/2098957602818326869",
+      "author": "Helena",
+      "text": "Larping bad, the larping dead and the larpanos💔💔💔",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/sanestchelsfan/status/2073116051596849370",
+      "author": "ubie #LiquidateChelsea",
+      "text": "Not necessarily the most larped but these come to mind",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/KetherBattle3/status/2034867647339258303",
+      "author": "BlazerBlu",
+      "text": "Might be the funniest larper I've ever seen \"Don Quinxote betrays the big brother of the middle\" LMFAOOOOO",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/may_equinox/status/2068449211939459188",
+      "author": "hana",
+      "text": "it's kinda funny when football players fall down and start rolling around but no one gaf so after like seven seconds of larping they just get up like nothing happened",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/bourglor/status/2089431422452793615",
+      "author": "himejofries 👩‍❤️‍💋‍👩 🐈 🍟",
+      "text": "His ass is not reading  📖😩😭😂😂😂 / guy sitting in a subway metro trying to aurafarm reading a book but in reality he is faking skipping following really fast with his finger each line & swiping pages / larping larp performative / reaction video meme stantwt",
+      "mediaType": "video"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/SnowfiesCharBox/status/2049492279380070777",
+      "author": "Snowfie's Box",
+      "text": "funny thing is larp means lore-accurate roleplay which has absolutely nothing to do with being a poser/fake fan\n\nwe are larping larp",
+      "mediaType": "text"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/phantom/status/2022451224503849148",
+      "author": "Phantom",
+      "text": "claude, make a deranged brainrot meme that goes viral and saves the markets.\n\nno mistakes.",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/shahh/status/1913752031602286813",
+      "author": "shah",
+      "text": "$italianrot one of the only memecoin that feels like an actual meme right now \n\nit’s just Italian brainrot.",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/MikaBriki/status/1915495067495600213",
+      "author": "🇾🇪 ميكا 𐩣𐩺𐩫𐩱",
+      "text": "Idk about those english brainrot memes but they look like a cheap version of these arabic ones",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/BetaEtaDelota/status/1853573321033416830",
+      "author": "BetaEtaDelota",
+      "text": "Send me FURRY BRAINROT MEMES or something and i'll collect them and do a video going over them maybe like a year from now i guess lol uwu",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/fomomofosol/status/1919280880490545170",
+      "author": "fomo 🧠",
+      "text": "so much $fried content online\n\nbasically the og brainrot but for standard memes\n\nI see the vision\n\nDo you?",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/ITSTVT1ME/status/1965903208808853845",
+      "author": "Mr. Ant Tenna",
+      "text": "I DON'T UNDERSTAND ALL THIS NEW SLANG. WHAT ON EARTH IS A \"BRAINROT\" WHAT IS A \"HAWK TUAH\"\nI DON'T GET IT!!!",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/sonny_striker/status/2083817317029314785",
+      "author": "sonny of sonnytwt🐼",
+      "text": "this video made me realize why brainrot is called brain rot",
+      "mediaType": "text"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/Gullstar10/status/1972778352663785516",
+      "author": "loaf from hoppers",
+      "text": "\"And for your information, I prefer brainrot-free, corny as hell memes MADE BY MAN!\"",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/maybelunat/status/1987375369373331691",
+      "author": "moon",
+      "text": "what the FUCK is happening in skibidi toilet",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/spagetlour/status/2100172992684716287",
+      "author": "himejofries👩‍❤️‍💋‍👩🐈🍟",
+      "text": "ishowspeed speed skibidi toilet 6 7 tung tung sahur fortnite brainrot laughing playing fortnite / reaction videomeme",
+      "mediaType": "video"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/jennierational/status/2042273299447652759",
+      "author": "ْ",
+      "text": "yall let the gnarly and eat zucchini shit slide and now they’re stuck doing skibidi toilet music for the rest of their career",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/equine__dentist/status/1739766582115529120",
+      "author": "horse dentist",
+      "text": "hearing terms like “skibidi toilet” and “rizzler” as a 25 year old",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/oomfsomething/status/1841982905251463427",
+      "author": "ْ",
+      "text": "oomf you are my skibidi to my toilet ❤️❤️❤️❤️ #loveyou",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/tallyspies/status/1990150668880085312",
+      "author": "bb",
+      "text": "y’all let the gnarly rage bait slide now they stuck doing skibidi toilet music forever",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/eiradoresyou/status/2100127363598319935",
+      "author": "Eira • *✰",
+      "text": "🫚: Chica hasn't come to my door yet.\n🫚: She's scared of me guys.\n🫚: She's scared of my aura.\n🫚: My skibidi bite of '87 toilet aura.\n\n#CaughtOnFernK",
+      "mediaType": "video"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/garrynewman/status/1870102165315801410",
+      "author": "garry",
+      "text": "I'm 42, I don't care if Fortnite added a skibidi toilet, please stop telling me",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/fortnitebussy1/status/1970864000562032938",
+      "author": "dingle",
+      "text": "that's because one of them is brainless garbage for drooling diaper babies and the other one's skibidi toilet",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/ParrotKing831/status/1994608862142632148",
+      "author": "TheParrotking831",
+      "text": "We all do respect fellow st fans, but please, for the love of God, stop repetitively using this image every time to represent Skibidi toilet.\nOf all images we could use, this & only this is chosen 😭🥀",
+      "mediaType": "image"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/brainrotpostig/status/2101386668003447053",
+      "author": "brainrot dimension",
+      "text": "https://t.co/tJ7jZgpXg4",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/brainrotpostig/status/2100269448796004410",
+      "author": "brainrot dimension",
+      "text": "https://t.co/05GdDAJst7",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/brainrotpostig/status/2100245924987441520",
+      "author": "brainrot dimension",
+      "text": "https://t.co/QHBQKI3rjk",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/brainrotpostig/status/2099667449599717784",
+      "author": "brainrot dimension",
+      "text": "https://t.co/XlOhs3Q5x8",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/brainrotpostig/status/2100694982055407934",
+      "author": "brainrot dimension",
+      "text": "https://t.co/urlV3ltcs6",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/brainrotpostig/status/2099349754471719156",
+      "author": "brainrot dimension",
+      "text": "https://t.co/LzIcs7QTIW",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/RukiRH/status/1947270221837840540",
+      "author": "Ruki Studios",
+      "text": "¿Y están al tanto que brainrot significa literalmente \"cerebro podrido\", y que se llaman así porque son memes tan rancios y de baja calidad que pareciera que te pudren el cerebro?",
+      "mediaType": "text"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/minisodeweno/status/1927007701009039846",
+      "author": "cori ★",
+      "text": "🌙💬 do you read books?\n🐶 YOU KNOW WHAT THIS REMINDS ME OF? [\"do you wear wigs\" meme]\n🐶 THAT'S NOT BRAINROT! that's like a classic. that's way before brainrot. you can't just call everything brainrot. there's brainrot and classic memes. you gotta be able to tell the difference.",
+      "mediaType": "video"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/BeavisEvan/status/2099677034473791679",
+      "author": "GRooNCH",
+      "text": "Here is my entry of\n@EU_Brainrot meme contest.\nOne Continent, One Brainrot.\nAll euro nation have their Brainrot Identity.\nCountry identity crisis, Zero Braincell.",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/__solstiice/status/1950902111757070559",
+      "author": "Sol ✽ Nakimushi Pink",
+      "text": "The concept of George Jetson being raised on Cocomelon, skibidi toilet, and Italian brainrot",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/TCombat5500/status/2101475871039291507",
+      "author": "Tank5500",
+      "text": "Rewatching these feel a lot more sad when you now know who made these. \n\n#skibiditoilet",
+      "mediaType": "video"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/witherstor33279/status/2100769121218789490",
+      "author": "stormbornxddddddd",
+      "text": "Skibidi tcw\n(Got this from meme on tiktok btw)\n\n#SKIBIDITOILET #skibiditoilet",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/SirSneezyBean/status/2100195057991094697",
+      "author": "sirsneezybean ‎ . ݁⋆ ۶ৎ ݁˖ . ݁",
+      "text": "My skibidi Toliet oc\nThey are a magical girl camera",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/LRH_Superfan/status/1751552136964440510",
+      "author": "Chairman",
+      "text": "Skibidi toilet is a conspiracy by the new wave mafia to get children into Tears for Fears",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/Phng2Hoi/status/2101265426223448424",
+      "author": "MR.Sunny",
+      "text": "Hey, so I revisited Skibidi Toilet after two or three years, and man, this guy is incredibly tactless. He gets rescued by TV Woman, but when he sees her again, instead of thanking her, he just rushes in and hugs her!?  💔🥀\n#skibiditoilet #tvwoman",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/Nekoyama_ACT3/status/2101475574820786540",
+      "author": "猫山ねこも",
+      "text": "skibidi toiletとかいう去年流行ったトイレのアニメーション動画。\n私はあれが大好きなんですよね。\n確かに昔はトイレだぁ！って思って観てましたが今はロボアニメと思って観てます。",
+      "mediaType": "image"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/igrik_legit/status/2101421225386144063",
+      "author": "Igrik - LetBoomSpeak.com",
+      "text": "I remember the day the Skibidi Toilet x Fortnite collab came out. It was really cool, and there was a huge buzz around the news. Now I just want the original creator of Skibidi Toilet — DaFuq!?Boom! — to get his channel back. Nothing else matters\n#Fortnite #SKIBIDITOILET",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/meiiyins/status/2100967815952121899",
+      "author": "lyn",
+      "text": "getting the larping allegations when really i just have a bad memory",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/onrichiyu/status/2086740118992236690",
+      "author": "y",
+      "text": "Friendship is all about larping each other’s interests",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/Cloud_yaa/status/2098078288522424653",
+      "author": "Cloudya ★ COMMS: all slots reserved",
+      "text": "\"larper\" \"larping\" \"you larp being a fan of-\" POSER YOU MEAN POSER JUST USE POSER WE DON'T HAVE TO REINVENT THE WHEEL",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/fendimogul/status/2100963652945768775",
+      "author": "۟",
+      "text": "yall learned the word “larp” and haven’t shut the fuck up since",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/bourglor/status/2099551165805420613",
+      "author": "himejofries 👩‍❤️‍💋‍👩 🐈 🍟",
+      "text": "evangelion hits a little too close to home... girl you know you don’t relate to evanjillion girl stfu shut the fuck hell up, seriously shut up / annoying kinnies kin fictionkins yumeshippers yumeship larper larp larping poseur poser anime / reaction video meme",
+      "mediaType": "video"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/izyltex/status/2101448401816596606",
+      "author": "zyltex",
+      "text": "LARPING the archives animation \n\nfull thing on youtube! but like this is almost the full version so idk doesn't matter\n#doorsroblox #ROBLOX #robloxanimation",
+      "mediaType": "video"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/fem_won/status/2101433608343003457",
+      "author": "kelly 𖤓",
+      "text": "These aren’t my prescription glasses #larping \n\n#evan #evrsd #heeseung",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/JeremyFitzer/status/2100610004168429977",
+      "author": "Jeremy Fitzgerald",
+      "text": "Should I get the SS (Steam Support) patch for my larp outfit?",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/keksiweksi/status/2093077078912745978",
+      "author": "Keksi",
+      "text": "i even larp in my sleep",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/eternalclassic_/status/2068979051033940230",
+      "author": "eternal classic",
+      "text": "larping bus meme",
+      "mediaType": "video"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/sakatayasha/status/2073632921668440097",
+      "author": "Sakata",
+      "text": "lately, everyones an algorithm and niche guru now,\n\nmeanwhile, they:\n\n> never learned an actual skill\n> never got rugged by a memecoin\n> never got liquidated\n> never had their wallet drained\n\nwhat they actually do is:\n\n> tag 69 people\n> post shitty tier lists\n> ragebait others to farm impressions\n> larp prediction market PnL\n\nand they call themselves “CONTENT CREATOR”",
+      "mediaType": "image"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/finityx/status/2101073992606245328",
+      "author": "finity",
+      "text": "You're not you when you're in the house too much\n\nYou literally become better, funnier, more charismatic as a byproduct of talking to a lot of people and enriching your identity.\n\nThe literal highest ROl thing you can do is go out and larp as an extrovert for a couple hrs a day",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/Booziio/status/1867187351010619843",
+      "author": "Booz",
+      "text": "Watching fascist.eth these past few days you knew this CRASHOUT was coming. \n\nShe took profits, had a few dollars. Saw her chart was crashing and started larping instead of being herself. \n\nY’all don’t know this but I am the content creator you’re looking for.  I’m excited to get my office remodel done so I can start a bit of streaming (lmao). You’ll see I’m the main character Chad that every thing I do you’ll be thinking fack I gotta do that too",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/Nvmin0us/status/2088565853855858867",
+      "author": "numia",
+      "text": "im genuinely larping as a content creator",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/stanleefounder/status/2099555731913511125",
+      "author": "Stan Lee (founder)",
+      "text": "the craziest part about sf is that all the restaurants close at 7pm and you are only allowed to violate the city-wide curfew at sunset if you have a note from a vc explaining that you're larping as a software entrepreneur",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/zohairk19/status/2100697961277644812",
+      "author": "Zack K",
+      "text": "working at coffee shops is larp.\n\nlove the vibes but productivity is low with only one screen and shitty wifi.\n\nyou're wrong if you think otherwise",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/nanamisonlyfans/status/2100624929301377121",
+      "author": "als☾ .⭒˚ kara ᢉ𐭩 boo !",
+      "text": "BRING BACK REAL LARPING (live action roleplay) LETS GO PRETEND WERE HOBBITS IN THE WOODSSSS",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/watermellondog/status/2087551542651990210",
+      "author": "anthony “apple” appleseed",
+      "text": "seeing a girl i went to highschool with periodically joining back tinder with a worse and worse bio each time is so funny",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/MurrayHillGuy1/status/2087551470761590871",
+      "author": "Murray Hill Guy",
+      "text": "Funny men… start your engines!\n\nWe got Shane Gillis ex on hinge. \n\nEveryone has a chance!",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/1929stockcrash/status/1473738610092478478",
+      "author": "levy",
+      "text": "i was flirting w this girl from tinder and made a joke about ppl with pet rodents 😕",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/MemesSemFiltros/status/2101127869854339325",
+      "author": "Memes Sem Filtros",
+      "text": ".                    No Tinder                    /                    Na Vida Real",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/9GAG/status/1985693918441185727",
+      "author": "9GAG ❤️ Memeland",
+      "text": "Finally got the chance to talk to someone you found intimidatingly attractive and realizing you two have 0 chemistry",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/holy_schnitt/status/1044306414657785856",
+      "author": "ellie schnitt",
+      "text": "hinge is great if you actually want to go on a date, tinder is great if you just need attention, and bumble is great if you want to match with hot guys but never speak to them bc your matches expire before u get up the nerve to say hi",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/Kateness8/status/1297581139377311744",
+      "author": "Ok Kate",
+      "text": "Learn To Make a Joke \n\nA dating app thread in pictures 1/3",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/HaYoMiDe_/status/1943563926395859181",
+      "author": "💕Mide💕",
+      "text": "This hilarious conversation between this guy and his first date is the most funny thing you will read online today🤣🤣🤣\n\nOpen thread",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/s4ggyborn/status/2061358738959966619",
+      "author": "red🔴",
+      "text": "decided to give the famous dating app another chance (again) last night. imagine trying to be funny and chessy for an opening line, and this is what u get. needless to say, i’ve already deleted the app (again) 🫠",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/credenzaclear2/status/1896731629940580686",
+      "author": "Audrey Horne Updates and Rumors",
+      "text": "POV you’re on a first date with me. Did you get my texts? I sent eleven texts. And called. Why didn’t you answer me? Who is she? Is she prettier than me? No, no it’s fine I get it. No I said it’s fine. I just think it’s funny how- wait why are you leav",
+      "mediaType": "image"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/castawaymariner/status/1947696975773593823",
+      "author": "aegg",
+      "text": "8 Hours Gooning, 8 Hours Scrolling, 8 Hours Vaping",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/memblean/status/2100937024161394879",
+      "author": "*",
+      "text": "All i do is binging gooning and doom scrolling anjing",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/TheHyyyype/status/1092575902297477120",
+      "author": "the hype",
+      "text": "waiter: i'm sorry sir, but your card has been declined\n\nme: run it again\n\nwaiter: i ran it three times\n\nme: *to my date* omg this is so embarrassing. do you mind taking care of it?\n\nher: no problem! *grabs waiter by the collar and pulls him close* he said run it again",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/gugu_dlodlo_99/status/1722631184566673795",
+      "author": "Gugulethu Dlodlo",
+      "text": "I went on a date, and things got a little awkward when I tried to use chopsticks.  I fumbled, I dropped things, and I may have whacked my date in the face.  On the bright side, at least I gave them a memorable first impression😣😭",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/kea_mogetsee/status/1475543198512648203",
+      "author": "Kea",
+      "text": "Can’t believe I went on a date this year and I tried sneaking in a pic for my friends and the flash went off. Most embarrassing moment in my life 😭😭😭😭",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/_amymcgheex/status/1057984212362498048",
+      "author": "amy mcghee",
+      "text": "I went on a date last night and I was struggling to cut my chicken up my date had to do it for me 😊😊😊😊 second date may I add bloody embarrassing, relations goals a suppose",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/yuurrthtszy/status/2100716692980580486",
+      "author": "Yuuuurrrrr✨💫",
+      "text": "Here is compilation of things I got through  in no chronological order with trying to date again after being single for 1year, 7 months: \n-Ghosted \n-Left on read \n-Dry responses \n-Only hit up to fuck (mind you haven’t had sex in 11 months)\n-“you’re an amazing guy but….”\n-introduced to a vibe that cannot be maintained.\n-lied to \n-men with husbands,or already in relationships hitting on me or wanting a third (which ion want I want my own man)\n-mean that lie about wanting to date to only talk about sex.\n- hypersexuals \n- mean gays\n- down to earth men that aren’t down to earth at all",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/VIBE_Beiv/status/2099468262010478745",
+      "author": "VIBEZ 🐋",
+      "text": "I went on a date with a guy who was still figuring himself out, and somehow i made him gayer lol. I Met him on weekend,He was shy and nervous, apologising repeatedly for how awkward he felt. \n\nEventually he admitted it was his first date with a man. I told him there was nothing wrong with that.\nWe talked about coming out, attraction, relationships, and how confusing it can feel when you’re discovering a side of yourself you never expected. By the end of lunch he looked genuinely happy.\nI think this afternoon taught me something about myself, he said and I smiled.\n\nAt least someone got a breakthrough from that date, I got the bill.😭🏳️‍🌈",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/lafleurmtl/status/2101461707960819747",
+      "author": "Daniel,Monsieur Lafleur to u Baron of Cadillac",
+      "text": "I once acquitted a woman of murdering her husband\nBut having her confession \nThe only evidence \nThrown out for no legal counsel\nShe asked me on a date after\nKept questionning me about how to collect the life insurance on him\nSince they refused based on confession \nAwkward",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/PresidentOfFart/status/1593223159242977281",
+      "author": "Truman Chipotle",
+      "text": "For real, my worst ever date was just that I showed up late and she was justifiably unhappy so I apologized, we had some drinks, and then we went our separate ways and never spoke again.",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/Logo_Daedalus/status/2072551643972022572",
+      "author": "R.Сам 🦋🐏",
+      "text": "Really funny to think about how people describe like “sexual self-discovery & self-actualization” & the concrete material embodiment of that is scrolling down a list of porn categories, sampling them, gooning.",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/pbandjaz/status/2051031193039065415",
+      "author": "jaz of whimsytwt 𖧧",
+      "text": "on the phone with jaaz while watching his stream and also scrolling twitter , and gooning (joke) .. i really am a multitasker",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/mattiopattio/status/2035793839881904179",
+      "author": "mattio",
+      "text": "it's funny cuz it's not even social media that is the most addictive thing, it's the mechanism of the phone it's self, the scrolling itself. i've been gooning on ebay for 2 hours straight.",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/amah_salma_/status/2099410739345715675",
+      "author": "Ama 🌷",
+      "text": "Dating in 2026:\n\n• “Hey”\n• Left on delivered for 9 hours\n• Talking stage\n• Situationship\n• “I’m not looking for anything serious” 😭",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/MediocreJoker85/status/2039587382203187543",
+      "author": "LaughBreak: Dad Jokes ‘N More",
+      "text": "A girl named Sarah went on a blind date and was really nervous. She worried he wouldn’t look anything like his photos.\n\nEarlier that day, her neighbor Janet had given her some advice. “Relax,” she said. “There’s an app for that. It’s called ‘Mom, Are You OK?’ If the date’s bad, you pretend it’s an emergency call and make a quick exit.”\n\nThat evening, the doorbell rang.\n\nSarah took a deep breath and opened the door… and there he was — tall, handsome, and even better looking than his photos.\n\nShe smiled to herself. No need for the app.\n\nJust as she was about to invite him in, his phone rang.\n\nHe looked at the screen, answered, and after a pause said, Mom? What’s wrong… are you okay?”",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/libriscent/status/2011374185881436472",
+      "author": "Libriscent",
+      "text": "Modern dating in a nutshell:\nHim: I like you, but I can’t meet your needs.\nHer: Okay, should we stop seeing each other?\nHim: Wait no, why would we do that?",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/KE_MrBlack/status/2062483103415767375",
+      "author": "MrBlack™",
+      "text": "Modern dating: She likes you → waits for you to shoot your shot → rejects you ×3 → \"I was just testing your patience 😌\"",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/sonuujjawal26/status/2100102309254709496",
+      "author": "𝙉𝙤𝙫𝙖 𝘾𝙧𝙖𝙯𝙚",
+      "text": "Funny how a dating-app match feels different in real life\nOne overpriced coffee some awkward small talk a few clock checks and suddenly that “chemistry” from the app is nowhere to be found 😭",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/KeruboSk/status/2027713028460818775",
+      "author": "Sophia ❣️",
+      "text": "Modern dating:\n\nHim: I really like you, but I can’t give you what you need.\nHer: I understand. So we should call it quits?\nHim: No, wtf?",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/angel_0f_deathx/status/1690203116430573568",
+      "author": "death angel",
+      "text": "if his dating app bio says “fluent in sarcasm,” he’s guaranteed to be the least funny man you’ve ever met in your life",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/idropFbombs/status/2059021127825928354",
+      "author": "𝒦𝑒𝓁𝓁𝓎࿎☽",
+      "text": "Me drafting my dating profile: \n\nI'm: \n-¼ psycho\n-¼ schizo \n-¼ diabolically genius\n-¼ quick-tempered \n\nUnvaccinated. \nBig heart, ❤️ loves animals + nature and will worship you if I fall for you. \n\nPerks: you can take me swimming on a first date and I will still look the same.\n\nFit, hilarious, and clinically insane. \nWould you swipe right? \n👉🏻❓️\n\n(This is 100% a joke btw 🤪)",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/DrunkRepub/status/1952441719292629472",
+      "author": "The Drunk Republican",
+      "text": "Political satire is fast approaching a dead end.\n\nIt is becoming increasingly difficult to lampoon the left, as they have become masters of lampooning themselves.\n\nFor someone who makes their hay on this app by mocking my political opponents, their decline into madness has become worrisome, albeit for very selfish reasons.\n\nShitposters such as myself operate in the gray area between reality and the outright absurd. It is here that we plant and harvest our little memes and clapbacks that have come to define online discourse.\n\nBut these days that fertile acreage has been decimated by the libs’ increasingly cartoonish behavior; the line between comedy and reality has beside blurred beyond distinction.\n\nConsider that we are only a few years beyond the Me Too movement and woman-groping weirdo Pedro Pascal is now considered a leftist hero while successful model and actress Sydney Sweeney is dubbed a Nazi for wearing denim.\n\nOr that a segment of the gay community believes they would be welcomed with open arms by Gazans.\n\nOr that Jasmine Crockett exists.\n\nI mean, what witty one-liners can possibly top these actual events?\n\nThere are none, just as no one or no thing  can outrun the speed of light. It’s physically fucking impossible.  \n\nAnd I am but one man!\n\nShould their Ls continue to pile up, as I predict they will, it’s difficult for me to find a path forward here. I could do food jokes I suppose (I’ve done one or two of those in the past to some acclaim). Or wade into philosophy and science, like a true intellectual.\n\nBut none of those are as fulfilling as dragging Commies through the proverbial mud.\n\nSo I say to them, “Return to me my fields, ye feckin’ weirdos!”\n\nDon’t deny me my one true joy in life, I beg of you. Where is the humanity and compassion so beautifully expressed on your “Coexist” bumper stickers?\n\nIt’s not enough we must compete with AI, but now your cosmic neuroses, too?\n\nPlease, be slightly more normal. After all, are we not countrymen?\n\nDo I not also bleed?",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/army1325air/status/2099862449616752928",
+      "author": "ARMY1325AIR",
+      "text": "Stand tall. Stand proud.\n\nPunch a politician…\n\nwith your vote, your voice, and a brutal fucking punchline.\n\nKeep your hands to yourself. Make the ballot box hurt instead.\n\nSatire, obviously. I am not responsible for your actions. Use your vote, not your fists 😉",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/PopulismUpdates/status/1680286400699314176",
+      "author": "Populism Updates",
+      "text": "The joke about satirical parties is that your country is screwed if people are voting for them, but I actually think absurdism and humor- when used effectively- can be some of the most effective weapons in politics",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/DaShaunLH/status/1230990577115725824",
+      "author": "da’shaun | they/them",
+      "text": "\"american politics have increasingly shifted to a national comedy roast, wherein the focus is on who can create the most drama and get the most laughs, rather than who can present the best policy and create the best conditions for the world around us.\" - @DaShaunLH",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/SilERabbit/status/1151221206579683329",
+      "author": "Parody of a Parody",
+      "text": "PUBLIC: Democrats, for fucks sake, do something about Trump!\n\nDEMS: We're on it! Here's a resolution about his tweets.\n\nPUBLIC: Jesus Christ. And???\n\nDEMS: We can walk and chew gum at the same time.\n\n[chokes on gum & falls in open manhole]",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/CynicalPublius/status/1857145049957708122",
+      "author": "Cynical Publius",
+      "text": "Usually I try to make some sort of witty or sarcastic remark when Democrats say or do something stupid, but I'm pretty sure I cannot improve on the straight up humor of this issue.",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/SirBylHolte/status/2067961874872737982",
+      "author": "Byl Holte",
+      "text": "Went to dinner last night with some liberal family and friends.\n\nEverything was going fine, and then out of nowhere:\n\nHER: “Bari Weiss has totally fucked up CBS News.”\n\nI didn't say anything, then:  \n\nHER: \"And what about that racist motherfucker that called Michelle obama a man?\"\n\nTHEN I STARTED SEEING RED.\n\nME: \"OMG it was a joke, why are you people so sensitive about everything?\"\n\nHER: \"It wasn't a joke and it wasn't funny. She's the fucking First Lady of the United States.\"\n\nME: \"Is it funny when your side calls Melania a whore and an escort and every nasty thing you can think of?\"\n\nHER: “Byl, fuck you, why are we even talking about politics in the first place?\"\n\nME: \"You're the one who started attacking and bitching about your goddess Michelle who you worship.”\n\nShe got up, threw her glass of water in my face and stormed out.\n\nNeedless to say, I won't be invited out again any time soon.",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/USronaldcarter/status/2056291311645327508",
+      "author": "🇺🇸 Ronald Carter",
+      "text": "I just got off the phone with someone who has tracked presidential communication patterns in Washington for over a decade. What they told me should end every \"Trump is just posting memes\" argument permanently.\n\n\"Every single president since Clinton had access to the same tools Trump is using right now. Every single one was briefed on the power of direct-to-public messaging. Every single one chose to route everything through press secretaries and managed press conferences because the political cost of being unfiltered was higher than the cost of being slow.\"\n\nTrump posted 25 times on Truth Social in a single day. AI-generated imagery. Iran strike maps. Alien visuals. \"I WANT YOU!\" recruitment poster framing. \"The clock is ticking, and they better get moving, FAST.\"\n\nHe chose to post that knowing the press would call it unhinged.\n\nHe chose to post that knowing late-night hosts would make it a punchline.\n\nHe chose to post that knowing foreign governments would screenshot every frame.\n\nHe chose to post that knowing his own allies would quietly ask him to stop.\n\nA senior analyst I know who studies presidential signaling put it this way: \"The difference between Trump and every president before him isn't access. They all had the same platforms. The difference is willingness.\"\n\nRead that again.\n\nEvery president had the same ability to speak directly, visually, and without a filter to 100 million people. Only one actually does it — during a nuclear standoff, at 9 PM, with an AI-generated recruitment poster.\n\nThe meme is the message. The post is the policy signal. And most people are still treating it like a joke.\n\nI'll keep you updated. Turn on notifications. 🚨",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/GOP_is_Gutless/status/2097648901264187475",
+      "author": "GRANDPA’s FREE ADVICE",
+      "text": "🚨BOOM — LOOK AT THIS GUILTY-AS-Heck FACE! Elizabeth Warren just got her lying ass completely destroyed.\n\nShe swore on live TV she was only using Biden’s autopen because “good ol’ Joe personally ordered it”…But the official logs just blew that bullshit wide open.\n\nWhile Sleepy Joe was dead-asleep overseas at 2AM UK time, Warren was right here in D.C. cranking out pardons and God-knows-what-else with that machine like it was her personal toy.\n\nYou expect us to believe she was waking up a dementia-ridden president in the middle of the night for permission? This is straight-up forgery, fraud, and the biggest presidential scam in history.\n\nEVERY SINGLE pardon, every executive order, every goddamn document signed with that autopen is ILLEGAL and must be wiped out IMMEDIATELY.\n\nThe entire Biden regime is a criminal joke.\n\nDo You Support This?!\n\n✅ Yes or ❌ No?!\n\nIf Yes, Leave Me a Thumbs Up 👍!\n\n~ Britany Henry, 7 Year Master of Science🌹 \n\n#Philosophy | #History | #Politics | #GoldenAge | #RepublicanParty | #TeaParty | #Trump #politics #maga #war #congress #FAFO #BREAKING | #DonaldTrump #News #Biden #fyp #iran #Epstein #tariffs #TrumpAdministration #DOJ #DrainTheSwamp #MakeAmericaGreatAgain #PresidentTrump #WhiteHouse #POTUS #Antifa",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/NormSNLJokes/status/2099830781241864563",
+      "author": "Norm Macdonald Joke of the Day",
+      "text": "In an interview this week, Bob Dole said he is strong enough to handle the pain of losing the Presidential Election.\n\nAlthough he did admit that the shock of winning would give him a giant heart attack.",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/AwesomeNewsom/status/1968107973940744659",
+      "author": "Governor Newsom Press Office (parody)",
+      "text": "SIR, THE ECONOMY IS TANKING. \"BIDEN!\" JOBS ARE DISAPPEARING. \"BIDEN!\" YOU DIDN'T STOP ANY WARS. \"BIDEN!\" WE CAN'T AFFORD FOOD. \"BIDEN!\" YOUR HAIR IS GONE. \"BIDEN!\" WHAT'S THAT ODOR? \"BIDEN!\" YOUR CANKLES ARE GIGANKLES. \"BIDEN!\" NEWSOM IS MORE POPULAR AND WAY HOTTER. \"BIDEEEEN!!\"",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/herotimeszero/status/1768005837845299526",
+      "author": "💙🌊 Zero Dark Twenty-Nine 🌊🌊🖋️🧫",
+      "text": "Sen. Katie Britt sent out a fundraising pitch, stating, \"...I didn't stand up to Biden in front of millions of Americans for ME. I did it for YOU and your children... They're not just laughing at me. They're laughing at every American.\"\n\nFollowing her pitch, others started pouring in. One senator needed money for a new pair of pants. \"I indulged in too much Chipotle and soiled my pants. I did it for YOU and your family. Please help.\"\n\nAnother representative needed money for a divorce attorney. \"I cheated on my husband for America. Please give generously. You owe me!\"\n\nLastly, another senator needed help. \"Last night as I exited my pool, I experienced shrinkage. Everyone was laughing. But not at me. They were laughing at YOU. Please help me get us a pool heater.\"",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/GOVpsyopsCO2/status/2100823994614395286",
+      "author": "JOHN MILNER THX138",
+      "text": "PARODY / SATIRE / PSYchOPS / POLITICAL COMMENTARY.\nVote for a clown’s, expect a circus.\nClowns to the left of me Jokers to the right Here I am stuck in the middle with you\nTherein lies the problem.",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/waltershub/status/2100301949291671751",
+      "author": "walter shub",
+      "text": "Harris Campaign Suffocating #satire\nThe campaign room is running out of oxygen. With the aides desperately trying to breathe life back into the operation, even the latest idea somehow gets aborted before it has a chance to grow.\n\nDisclaimer:\nThis video is satire and parody. It does not depict real events and does not condone, encourage, celebrate, or advocate violence in any way.\n\n#KamalaHarris #HarrisCampaign #PoliticalSatire #CampaignSatire #PoliticalComedy #USPolitics #GavinNewsom #LindsayClancy #LindsayClancyTrial #EndWokeness #MAGA #Satire #DougEmhoff #ColeEmhoff #EllaEmhoff #GavinNewsom",
+      "mediaType": "video"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/RealAlbanianPat/status/1903644578617368939",
+      "author": "Charestiste🇨🇦🍁",
+      "text": "Funniest campaign news release I've seen in years",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/Biz_Shrink/status/2014232184874246432",
+      "author": "Dr. Jan Halper-Hayes",
+      "text": "Been on a roll posting “Refresher points” but enough of my seriousness. Time to remember the humorous memes from the 2024 campaign 😂",
+      "mediaType": "video"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/Seanbabydotcom/status/1324159287124373506",
+      "author": "Seanbaby",
+      "text": "ideas for parody election movie:\n\nCorrupt, stupid President “hereby declares” victory while losing.\n\nGuy in sleeveless BBQ BEER FREEDOM shirt interrupts news report to declare everything is a lie.\n\nEric Trump poops on his balls?\n\nUgh, I have to throw this whole draft out.",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/SunSurfSalt/status/2099673430073233851",
+      "author": "Sun Sea Salt & Sand",
+      "text": "Mock the voter, call him dense,\nSneer at half the audience.\nTell the rest they’ve lost their brain,\nThen ask for all their votes again.\n\nCall them sheep and call them fools,\nLecture them on “common rules.”\nShout that only you can see—\nThen wonder why they disagree.\n\nPolitics is rather funny:\nYou need votes, not rage or money.\nIf your grand campaign technique\nIs calling everyone a freak,\n\nDon’t act shocked when polling day\nSends your little dream away.\nYou can mock the country blue—\nBut mocked-up voters mock you too.",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/SilERabbit/status/1015357838556725248",
+      "author": "Parody of a Parody",
+      "text": "There are Dems on the 2018 ballot who we don't like or trust, who vote Republican & don't represent our values.\n\nWe must enthusiastically phonebank, donate & vote for them.\n\nOr we'll end up with politicians we don't like or trust, who vote Republican & don't represent our values.",
+      "mediaType": "video"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/DivyangKalal01/status/2100989936090615856",
+      "author": "King of SONION",
+      "text": "Congress: reality On social media 🗿\n\nCongress: reality during election 👇🏻\n\n(Altho I'm not supporting this meme not bcuz of pappu lol bcuz of lack of civic sense and gukta shits. Pappu pe thuk na ki streets pe)",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/AwesomeNewsom/status/1995203084071670138",
+      "author": "Governor Newsom Press Office (parody) - @AwesomeNewsom",
+      "text": "\"ASYLUM WAS APPROVED IN APRIL BY TRUMP.\"\n\"THAT WAS BIDEN.\"\n\"WHY DOES TRUMP WANT A WAR WITH VENEZUELA?\"\n\"NO, BIDEN DOES.\"\n\"WHY IS TRUMP PLAYING SO MUCH GULF?\"\n\"THAT'S BIDEN PLAYING GOLF.\"\n\"DID TRUMP FALL ASLEEP AT A MEETING TODAY?\"\n\"BIDEN FELL ASLEEP AT A MEETING TODAY.\"\n\"WHY ARE TRUMP'S CANKLES SO--\"\n\"BIDEN.\"\n\"MELANIA CLAIMS DONALD CAN'T GET AN--\"\n\"BIDEN!\"",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/AwesomeNewsom/status/2086491978028523539",
+      "author": "Governor Newsom Press Office (parody) - @AwesomeNewsom",
+      "text": "Why is the economy poor? Biden. Why did Trump attack Iran? Biden loves war. Why did Trump surrender? Biden is weak. Why does Trump's hair look so weird? Biden did it, disguised as a barber. Why is Trump's name all over the Epstein files? \"Trump\" is a common misspelling of Biden.",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/AwesomeNewsom/status/1987636016308744260",
+      "author": "Governor Newsom Press Office (parody) - @AwesomeNewsom",
+      "text": "YES DONNY, IT'S ALL BIDEN'S FAULT. GOVT SHUTDOWN - BIDEN! DISAPPEARING JOBS - BIDEN! DISAPPEARING HAIR - BIDEN! WE CAN'T AFFORD FOOD - BIDEN! YOUR ODOR - BIDEN! YOUR FACE - BIDEN! THEY CALL YOU SNOOZY SATAN - BIDEN! YOUR CANKLES ARE GIGANKLES - BIDEN! NEWSOM IS MANLIER - BIDEEEN!",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/AwesomeNewsom/status/2101109578696216895",
+      "author": "Governor Newsom Press Office (parody) - @AwesomeNewsom",
+      "text": "Effective immediately, I'm banning Trump from our homes. No more sending us memes of Donald as Elvis or a Gladiator. People have a right to eat and not throw up. And no more messages. Just glancing at them lowers your IQ. Dumold Trump is banned! You're welcome. --The Gavinator.",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/LegendaryEnergy/status/2037951118639059105",
+      "author": "An0maly - @LegendaryEnergy",
+      "text": "Biden says something goofy: “HAHAHAHAHAH OMG. HAHAHAHA!”\n\nTrump says something goofy: “OMG. RELAX. UR BEING MEAN. STOP TALKING ABOUT THE PRESIDENT.”",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/OurShallowState/status/1780607427160981597",
+      "author": "The Shallow State - @OurShallowState",
+      "text": "Joe Biden has been showing good humor these days - he's got a strong social media team, and he's tossing some pretty good barbs live, especially in clips from private events. One of my favorites:\n\"Just the other day, a defeated-looking guy came up to me and asked if I could help. He said he was drowning in debt. I said I'm sorry, Donald, but I can't help you.\"",
+      "mediaType": "text"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/AmericanEthical/status/2056045039202242574",
+      "author": "Ethical American - @AmericanEthical",
+      "text": "Jesus: “Bro… are you okay? 🤷🏻‍♂️”\n\n#DonaldTrump #MainCharacterEnergy\n#Trump #christianmemes\n#holymoly #satire",
+      "mediaType": "image"
+    },
+    {
+      "category": "political-shitposts",
+      "url": "https://x.com/OccupyDemocrats/status/1687512482049601536",
+      "author": "Occupy Democrats - @OccupyDemocrats",
+      "text": "BREAKING: MAGA fans suddenly realize that they've shot themselves in the feet with their \"Let's Go Brandon\" chants as it's revealed that President Biden's \"Dark Brandon\" campaign merchandise is flying off the shelves — and fueling his reelection.\n\nYou simply can't make this stuff up...\n\nOriginally, \"Let's Go Brandon\" was a Republican slogan that was supposed to stand in for \"Fuck Joe Biden.\" Democrats than seized \"Brandon\" as an ironic way of referring to Joe Biden — reclaiming it from the fascists.\n\n\"Brandon\" evolved into \"Dark Brandon\" which is a tongue-in-cheek caricature of Biden who is ruthless in pursuing his agenda. Every time Joe Biden scores a win for hard-working average Americans, it's said that \"Dark Brandon\" has struck again.\n\nThe meme has grown so popular that President Biden is selling t-shirt and coffee mugs with the character on them. He even posted a playful video of himself drinking coffee from a mug featuring a Dark Brandon version of himself.\n\nAccording to a new report from Axios, more than 54% of the Biden campaign merchandise revenue is coming from Brandon-themed products. They've also driven 76% of the click traffic to the campaign website.\n\nIn other words, Joe Biden has taken an attack from MAGA and turned it into moneymaking machine to help him retain the White House in 2024. \n\nThis is one of the biggest fundraising backfires in modern political history. In this instance, we can say something we never say otherwise: Thanks MAGA!\n\nPlease retweet and ❤️ if you're going to vote for Dark Brandon — and consider joining the growing exodus to Tribel, a “woke” new Twitter competitor that banned Trump for life and is exploding in popularity because Elon Musk banned Tribel’s Twitter account — but he forgot to ban this link to download the new Tribel app:",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/SuiBuilds/status/2101028231558185175",
+      "author": "Sui_Builds",
+      "text": "Three engineers: electrical, mechanical, and software; are driving when the car suddenly breaks down.\n\nThe electrical engineer says, “Probably the ignition coil.”\n\nThe mechanical engineer says, “Could be the engine or fuel system.”\n\nThe software engineer says, “Why don’t we all get out, get back in, and try starting it again?”",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/sarah_edo/status/2096079141414252737",
+      "author": "Sarah Drasner",
+      "text": "Ok I have a joke for you that I made up\n\nSome devs were setting up a project where every directory was a letter of the alphabet. But the build wasn't compiling. One thought the problem was in the \"G\" directory, but the other said\n\n\"see I see D\"",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/SuiBuilds/status/2100657934850048140",
+      "author": "Sui_Builds",
+      "text": "Joke of the day: \n\nWhy did the software engineer get fired?\n\nBecause they couldn’t commit.",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/abhishekcode42/status/2007593408085565581",
+      "author": "Abhishek",
+      "text": "This is a nightmare for testing engineers\n\nHere is a classic joke which describes the situation:\n\nA testing Engineer walks into a bar.\n​Orders a beer.\n​Orders 0 beers.\n​Orders 99999999999 beers.\n​Orders a lizard.\n​Orders -1 beers.\n​Orders a ueicbksjdhd.\nEverything worked as expected.\n\n​The first real customer walks in and asks where the bathroom is.\n\n​The bar bursts into flames.",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/magicseth/status/2077474893571227663",
+      "author": "Seth Raphael",
+      "text": "A junior dev asked the staff engineer: \"How do I know if the AI's code is correct?\"\nThe staff engineer replied: \"How do you know if yours is?\"\nThe junior dev was enlightened. Prod went down.",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/2101431246953828419",
+      "author": "Programmer Humor",
+      "text": "The deploy can wait, the sprint can wait, the standup can definitely wait.",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/2100525290392785121",
+      "author": "Programmer Humor",
+      "text": "Reviewing code is now the most expensive skill in software, and nobody trained for it.",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/2100766872882860166",
+      "author": "Programmer Humor",
+      "text": "Uptime is the only code review that matters.",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/2100555478442868765",
+      "author": "Programmer Humor",
+      "text": "We used to flex by building impossible things for fun. Now we flex by describing what we want.",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/2100887671514050722",
+      "author": "Programmer Humor",
+      "text": "The prompt writes itself. The stack trace never does.",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/1455459692717744128",
+      "author": "Programmer Humor - @PR0GRAMMERHUM0R",
+      "text": "Everyone who didn't use git during their school projects and only started using it at work https://t.co/Jd2fThX9de",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/1464307997992173578",
+      "author": "Programmer Humor - @PR0GRAMMERHUM0R",
+      "text": "When people *use* git but don't actually **use** git https://t.co/pXhxm6w3iD",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/1661930211976388611",
+      "author": "Programmer Humor - @PR0GRAMMERHUM0R",
+      "text": "When you accidentally push test data to production https://t.co/bzmc6nSJn6",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/1913774650879779159",
+      "author": "Programmer Humor - @PR0GRAMMERHUM0R",
+      "text": "deployingToProductionBeforeHolidayBreakWhatCouldGoWrong https://t.co/oSgyxXgUgk",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/PR0GRAMMERHUM0R/status/2101038708149383531",
+      "author": "Programmer Humor - @PR0GRAMMERHUM0R",
+      "text": "Seniority is just the time it takes to forget your own commit history.",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/nixcraft/status/1801508328574497248",
+      "author": "nixCraft 🐧 - @nixcraft",
+      "text": "// A developer walks into a job interview\n\nJob Interviewer: \"What's your experience with Git?\"\n\nDeveloper: \"Oh, I know all the important commands. git clone, git add, git commit, git push, ......\"\n\nJob Interviewer: \"Sounds good. What about git rebase?\"\n\nDeveloper: (Sweating nervously) \"...git blame?\"\n\n*Everyone in the room laughs because they've all been there.*",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/Jogoh95/status/2100329880051122376",
+      "author": "Jong - @Jogoh95",
+      "text": "Evolution of git commit messages throughout a Friday afternoon:\n\n1:00 PM: \"feat(auth): implement token refresh with secure cookies\"\n3:00 PM: \"fix: edge case with expired session\"\n4:45 PM: \"fix typo\"\n5:30 PM: \"please work\"\n6:00 PM: \"final final fix v2\"",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/jiya_3063/status/2100433904998236276",
+      "author": "Jiya - @jiya_3063",
+      "text": "Me: “My code works.”\n\nGit: “Did you commit it?”\n\nMe: “Not yet.”\n\nLaptop: updates automatically\n\nMe: “…”\n\nGit: “I told you to commit.” 💀\n\nEvery developer learns this lesson the hard way. 😂",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/Dailycodinghab1/status/1353067571654742017",
+      "author": "Dailycodinghabit - @Dailycodinghab1",
+      "text": "In case of fire #git #developer #js #meme #memes #programming #python #java #codingtips #php #coder  #coding #programmer #developer #linux  #hacker  #web  #tech  #dev #dailycodinghabit #100DaysOfCode",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/devops_nk/status/2058906761311187110",
+      "author": "Nandkishor - @devops_nk",
+      "text": "This is literally how every DevOps conversation starts:\n\nDeveloper: “It works on my machine.”\n\nDevOps: “Then we’ll ship your machine.”\n\nDocker: “Say less.” 🐳\n\nAnd that’s not even a joke.\n\nThat’s the exact problem Docker solved.\n- Same code.\n- Same dependencies.\n- Same environment.\n- Everywhere.\n\nNo more:\n“but it worked locally.\" \n\nDrop a 🐳 if you’ve been on either side of this conversation.",
+      "mediaType": "image"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/Arikalabs/status/2039475364771103212",
+      "author": "Arika",
+      "text": "A C developer, a Python developer, and a JS developer walk into a bar. \n\nC dev: I'll take a beer. \nPython dev: I'll have what he's having.\nJS dev: [object Object]",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/nalinrajput23/status/2100596134125416491",
+      "author": "Nalin",
+      "text": "Frontend developers: “The API is slow.”\n\nBackend developers: “The database is slow.”\n\nDatabase: “The query is slow.”\n\nQuery: “You forgot the index.”",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/T_dev02/status/2100980675969241339",
+      "author": "Tanvi Handa",
+      "text": "JavaScript has a special talent:\n\nYou write 20 lines of code\nEverything looks perfect.\n\nYou run it.\n\n\"undefined\"\n\nYou stare at the screen.\n\nJavaScript stares back. 😭",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/meetshah6565/status/2100508532034678824",
+      "author": "Meet Shah",
+      "text": "JavaScript has the confidence of a language that has never faced consequences \n\n\"[] + []\" → \"\"\"\"\n\n\"[] + {}\" → \"\"[object Object]\"\"\n\n\"\"5\" - 1\" → \"4\"\n\n\"\"5\" + 1\" → \"\"51\"\"\n\nAnd somehow…\n\nthe entire internet runs on this thing.\n\nRespected",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/siddontang/status/2101161512723501509",
+      "author": "siddontang",
+      "text": "“We don’t need a relational database.”\n\nTwo years later: “We accidentally built one. In JavaScript.” 😂",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/gidibamshop/status/2100998969874653385",
+      "author": "Gidibam | Web Dev & SEO",
+      "text": "There are only two hard things in Computer Science: cache invalidation, naming things, and off-by-one errors.\n\nRage bait or true talk 🤔🤔🤔🤔",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/JLarky/status/1870711734689788328",
+      "author": "JLarky",
+      "text": "- everything is a file (Unix)\n- everything is an object (Java)\n- everything is a string (Perl)\n- everything is a global variable (PHP)\n- everything is an app (Macromedia Flash)\n- everything is XML (too many to name)\n- everything is an HTML attribute (Angular.js)\n- everything is a stream (RxJS)\n- everything is a component (React)\n- everything is a hook (React but 5 years later)\n- everything depends (senior developer)",
+      "mediaType": "text"
+    },
+    {
+      "category": "developer-humor",
+      "url": "https://x.com/_devJNS/status/1939383461443199335",
+      "author": "JNS",
+      "text": "Backend developers after writing 3 lines of CSS 😂",
+      "mediaType": "image"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/MemeManMylesIG/status/2095038844059971761",
+      "author": "myles",
+      "text": "The new 7 deadly sins:\nLust (Gooning)\nWrath (Crashing out)\nPride (Main character)\nEnvy (Pocket watching)\nGluttony (Big back)\nSloth (Doomscrolling)\nGreed (Gatekeeping)",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/NeetGirlWife/status/2096300282934116734",
+      "author": "Neet Girl",
+      "text": "Being productive is gooning as soon as you get in bed instead of doomscrolling for hours",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/rottingmoron/status/2095866273020457453",
+      "author": "🦐🦐🦐🦐",
+      "text": "hello 6:28 in the morning i had a productive night of gooning and scrolling",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/0xBlurvf/status/1941406430864835034",
+      "author": "Blur",
+      "text": "Why does my brain actually feels fried from scrolling and gooning.\nI thought it was just a meme",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/RuiCarrilho5/status/1944853732380004445",
+      "author": "Roy Carrilho",
+      "text": "the entire tl is now gooning and defense contracts.\ntry explaining that to someone who isn't terminally online.",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/KiMCHiSOFT/status/1797418364165652855",
+      "author": "KiMCHi",
+      "text": "gooning, aura, maxxing, mewing, rizz, drip, coomer, jelqing, chat, opp, ohio, gyat, bussing, spice, bubba truck, doomer, mog, corn, twin, mirror sex, learn chinese, it's so over, serve cunt, geeker, edgar, fent-fold, bop, chad, glaze, brain-rot, twelve, striker, sigma, unc",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/JBmeta/status/2101032144558825883",
+      "author": "JB",
+      "text": "Gooning at work 😂😂😂",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/nisrep_/status/2101409947854512561",
+      "author": "Nasu 🐥",
+      "text": "what are you even supposed to tweet about besides gooning and shi 😂😂🤧🤧🧐🧐😳😳😳",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/kitsune__emi/status/2099959842735583304",
+      "author": "єммy || RESIGN TIM SWEENEY",
+      "text": "AI could never compete with Gigi in a million years! This piece is just so gorgeous omg great work Gigi! 🩷🩷🩷🩷\nGot me gooning! (Jk 😂😂)",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/Bread_93/status/2101334166965194973",
+      "author": "вяιgєттє",
+      "text": "The amount of old white ladies that MulletReviews has influenced to say “I’m definitely gooning.” is astronomical. And they don’t even realize 😂😂",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/plentyheals/status/2101431903593042132",
+      "author": "🧟‍♀️",
+      "text": "u gooning instead of hopping on bandlab again huh",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/SaltyNoodles2/status/1862611503540478138",
+      "author": "SaltyNoodles",
+      "text": "“Hey buddy, Corporate said we need to cut back on the Gooning and Edging sessions. We’re way over budget and if we don’t stop, then layoffs are gonna start happening.”",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/chesir3cat/status/2089794039042191603",
+      "author": "Cheshire Cat",
+      "text": "Marc is too busy gooning on LinkedIn to care",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/danstradingco/status/2079890336873083192",
+      "author": "dan",
+      "text": "gooning on LinkedIn is next lvl psycho",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/cyothevile/status/2048689742225576177",
+      "author": "cyo",
+      "text": "Gooning on linkedin is wild",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/EL_G0H4RY/status/2048675916235067487",
+      "author": "Mo.",
+      "text": "Gooning on LinkedIn is WILD 😭",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/heyitshyper/status/2008243812926370106",
+      "author": "Hyper 🦁 (1-1)",
+      "text": "I'm so unbelievably bored at home I've been LinkedIn gooning for 3 days, just submitting job apps for shits and giggles",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/mobilesales/status/2089009772838425016",
+      "author": "HiAce",
+      "text": "Correct. But the real prob? No one wants to admit it while pointing at kids and TikTok. Much harder to look at yourselves.\nThe keyboard monkeys who think they're winning while on Slack all day, on LinkedIn for dopamine, and gooning for GitHub PR hits like a lab rat. Brain rot x2",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/introcapybara/status/1969796228960620776",
+      "author": "Ajit Ashwath",
+      "text": "peak linkedin gooning",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/inDEXmatchBUILD/status/1650990652874801153",
+      "author": "Extraction Shooter Capitalism",
+      "text": "asking my former manager for a LinkedIn gooning endorsement",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/la_di_do_da/status/2101040060871139501",
+      "author": "Ladida ‎",
+      "text": "Galvatron: No gooning during work hours! 😡",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/ChiralBp/status/2100084900368191848",
+      "author": "That extra methyl —CH3",
+      "text": "Encourage gooning?\n.......I have a zoom meeting in less than 30 mins, I am thinking of destroying the 'puter",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/petrolb0mbz/status/2093248867982774764",
+      "author": "Cat Khan",
+      "text": "Hear me out...\nLinkedIn...\nBut for gooning...\n\nMuch to think about...",
+      "mediaType": "text"
+    },
+    {
+      "category": "gooning",
+      "url": "https://x.com/bunniestbuni/status/2099582219454968305",
+      "author": "𑣲𝓖",
+      "text": "ten minutes late to work because of gooning like okay",
+      "mediaType": "text"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/ShekaiGoto/status/2071354955508711791",
+      "author": "Shekai 🦈🏴‍☠️",
+      "text": "GYATT DAMN!!!!!!!!!!!!!!! 🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣 wait..are you tryna rizz me up!?!?!?! 🤣🤣🤣🤣 that so sigma of you 🤣🤣🤣🤣🤣🤣🤣 youre such a little sigma skibidi rizzlet 🤣🤣🤣🤣🤣 look at that GYATT!!!!!!!!!!!!! She has got gyatt!!!!!!!!!!!!!!!!!! LOL!!!!!!!!!!!!!!!!!!!! 🤣🤣🤣🤣🤣🤣🤣 i am the ULTIMATE rizzler!!!! 🤣🤣🤣🤣🤣 she be rizzing on my OHIO till i skibidi 🤣🤣🤣🤣🤣 bruhhhh i got fanon taxed 🤣🤣🤣🤣🤣🤣🤣🤣 last rizzmas i gave you my GYATT!!!!!!!!! 🤣🤣🤣🤣🤣 #gyattparty!!!!! LOL he is SUCH a sigma ALPHA 🤣🤣🤣🤣 skibidi dop dop dop yes yes yes 🤣🤣🤣 bruh the new skbidi episode is BUSSIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OHIO MOMENT!!! 🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣 rizzy mcrizzter!!!! 🤣🤣🤣🤣🤣 im about to rizz you up if you keep showing me your GYATT 🤣🤣🤣🤣🤣 i know im a SIGMA but that doesnt mean i cant have a GYATT too 🤣🤣🤣🤣🤣🤣 RIZZ!!!!!!!!!!!!!!!!!!!!!!!!!! 🤣🤣🤣🤣🤣🤣 i couldnt even rizz to this ii just skibidi’ed all over my pants clean up isle OHIO 🤣🤣🤣🤣🤣 LOL OHIO!!!!!!!!!!!!!!!!!!!!! SKIBIDI!!!!!!!!!!!!!!!!!! Rizz me up or youre a skibidi!!!!!!!!!!!! 🤣🤣🤣",
+      "mediaType": "text"
+    },
+    {
+      "category": "brainrot",
+      "url": "https://x.com/M1A2_AbramsTank/status/1835823535639453851",
+      "author": "GDI",
+      "text": "BOIIII WHAT YOU SAY ABOUT PHONK? -enters dark skibidi troll mode- only in ohio, we go gym brah, sussy baka skibidi toilet yes yes yes hit it the with the nae nae fortnite battlepass omega sigma phonk andrew tate troll face moment, level 9 gyatt, pay the fantum tax, let me be your rizzler, swag meter on peak, stop the cap, L + ratio tbh, beast mode: ON, sigma mode: ON, OI OI OI, those who know will know, -activates noradrenaline-  rahhhhh rahhhh rahhhhhhhh -eyes turn red- oh my gyatt i just turned on SKIBIDI RIZZ OHIO MODE RAHHHHHHHHHHHHHHHH RAHHHHHHHH time for some epic gamer moments brah -starts e dating- time for me -chuckle-  -puts glasses on face with finger- to find some e girlz, heh, call me the rizzler bc i have W aura and rizz, we aint like them basic zesty broke boiz, let me cook yall. out of my way npcs, gonna spam W and S like i do in roblox all day, every dayyy. IT'S EVERYDAY BROOO  You know it's Nick Crompton and my collar stay poppin' Yes, I can rap and no, I am not from Compton England is my city And if it weren't for Team 10, then US would be shitty\n\nsorry i ment to post this on discord",
+      "mediaType": "text"
+    },
+    {
+      "category": "skibidi-toilet",
+      "url": "https://x.com/sx7jirai/status/2101288931509907956",
+      "author": "blueprint sx7",
+      "text": ":let's finger paint!\npaint: WHAT! 😨\nlets: I'm scared 😨 😨\nscared: no I'm scared🥷\nno : Hi scared👌👌\nSkibiti toilet: fein fein fein fein fein fein fein 🤑🤑🤑🥶🥶🥶😎😎😎",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/VivaLaStool/status/1890385057992282379",
+      "author": "Viva La Stool",
+      "text": "The squad agreed to dress up as Teenage Mutant Ninja Turtles characters but everyone accidentally chose the Shredder character except Hank",
+      "mediaType": "image"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/MaybePileJokes/status/1266098819084640256",
+      "author": "Maybe Pile",
+      "text": "[first date]\n\nher: so tell me your most embarrassing first date story\n\nme: one time I tried to sneak a fart out and accidentally crapped myself\n\nher: *laughing hysterically* so no second date then!\n\nme: im hoping there will be\n\nher: what i don't understa..*sniffs*  OH DEAR GOD",
+      "mediaType": "text"
+    },
+    {
+      "category": "dating",
+      "url": "https://x.com/xkxxnt/status/2101338201067806751",
+      "author": "Ri_",
+      "text": "every time sum1 tries to dm me on a dating app idk what to say, n if theyre my type im even more awkward, so i just deleted my account while overthinking it 😂",
+      "mediaType": "text"
+    },
+    {
+      "category": "larping",
+      "url": "https://x.com/lurity4/status/2099933836062630250",
+      "author": "lurity & that || currently more ia",
+      "text": "gonna go out to do a slightly late grocery run larping as a taken person with the shirt I bought for 1€ at a fleemarket\nsince it’s still felix day over here I will just pretend like he’s my gf today 😝💛 (obv a joke don’t come at me)",
       "mediaType": "image"
     }
   ]

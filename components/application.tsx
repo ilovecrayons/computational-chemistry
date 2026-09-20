@@ -10,7 +10,7 @@ import {
   UserCircle,
   Users,
 } from "@phosphor-icons/react";
-import type { Me } from "@/lib/contracts";
+import type { Candidate, Me } from "@/lib/contracts";
 import {
   AuthScreen,
   MeScreen,
@@ -22,6 +22,7 @@ import { FeedScreen, SavedScreen } from "./memes";
 import { NotificationsScreen, PostScreen } from "./social";
 import { ChatsScreen, Conversation, DiscoverScreen } from "./people";
 import { api, ErrorNote, Loading, RequestError } from "./ui";
+import { SessionMatch } from "./session-match";
 
 type View =
   | "memes"
@@ -85,6 +86,33 @@ export default function Application() {
     postId: null,
   });
   const request = useRef(0);
+  const activeUserId = useRef<string | null>(null);
+  const positiveMemeIds = useRef(new Set<string>());
+  const positiveCount = useRef(0);
+  const sessionPopupShown = useRef(false);
+  const sessionPopupGeneration = useRef(0);
+  const authGeneration = useRef(0);
+  const sessionMatchOpenRef = useRef(false);
+  const candidateRequest = useRef(0);
+  const [sessionCandidate, setSessionCandidate] = useState<Candidate | null>(
+    null,
+  );
+  const [sessionCandidateLoading, setSessionCandidateLoading] = useState(false);
+  const [sessionCandidateError, setSessionCandidateError] = useState<
+    string | null
+  >(null);
+  const [sessionMatchOpen, setSessionMatchOpen] = useState(false);
+  const [sessionMatchUserId, setSessionMatchUserId] = useState<string | null>(
+    null,
+  );
+  const authenticatedUserId = me?.user.id ?? null;
+  const complete = Boolean(me?.profile?.complete);
+  if (activeUserId.current !== authenticatedUserId) {
+    activeUserId.current = authenticatedUserId;
+    authGeneration.current += 1;
+  }
+  const currentAuthGeneration = authGeneration.current;
+  sessionMatchOpenRef.current = sessionMatchOpen;
   const content = useRef<HTMLElement>(null);
 
   const refresh = useCallback(async () => {
@@ -144,6 +172,85 @@ export default function Application() {
     },
     [],
   );
+  useEffect(() => {
+    ++candidateRequest.current;
+    positiveMemeIds.current.clear();
+    positiveCount.current = 0;
+    sessionPopupShown.current = false;
+    setSessionCandidate(null);
+    setSessionCandidateLoading(false);
+    setSessionCandidateError(null);
+    setSessionMatchOpen(false);
+    sessionPopupGeneration.current = 0;
+    setSessionMatchUserId(null);
+  }, [authenticatedUserId, currentAuthGeneration]);
+
+  const loadSessionCandidate = useCallback(async () => {
+    const userId = activeUserId.current;
+    if (!userId || !complete) return;
+    const current = ++candidateRequest.current;
+    setSessionCandidateLoading(true);
+    setSessionCandidateError(null);
+    setSessionCandidate(null);
+    try {
+      const result = await api<{ candidates: Candidate[] }>("/api/candidates");
+      if (
+        current !== candidateRequest.current ||
+        activeUserId.current !== userId
+      )
+        return;
+      const candidate = result.candidates.find(
+        (item) => item.id !== userId && !item.browseOnly,
+      );
+      setSessionCandidate(candidate ?? null);
+    } catch (cause) {
+      if (
+        current !== candidateRequest.current ||
+        activeUserId.current !== userId
+      )
+        return;
+      setSessionCandidateError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not load a match suggestion.",
+      );
+    } finally {
+      if (
+        current === candidateRequest.current &&
+        activeUserId.current === userId
+      )
+        setSessionCandidateLoading(false);
+    }
+  }, [complete]);
+
+  useEffect(() => {
+    if (authenticatedUserId && complete) void loadSessionCandidate();
+  }, [authenticatedUserId, complete, loadSessionCandidate]);
+
+  const onPositiveReaction = useCallback(
+    (memeId: string) => {
+      const userId = authenticatedUserId;
+      const generation = currentAuthGeneration;
+      if (
+        !userId ||
+        generation !== authGeneration.current ||
+        userId !== activeUserId.current ||
+        !complete ||
+        sessionPopupShown.current ||
+        positiveMemeIds.current.has(memeId)
+      )
+        return;
+      positiveMemeIds.current.add(memeId);
+      positiveCount.current += 1;
+      if (positiveCount.current !== 5) return;
+      sessionPopupShown.current = true;
+      sessionPopupGeneration.current = generation;
+      setSessionMatchUserId(userId);
+      setSessionMatchOpen(true);
+      void loadSessionCandidate();
+    },
+    [authenticatedUserId, complete, currentAuthGeneration, loadSessionCandidate],
+  );
 
   useEffect(() => {
     content.current?.scrollTo({ top: 0, behavior: "instant" });
@@ -153,12 +260,11 @@ export default function Application() {
     route.chat,
     route.profile,
     route.postId,
-    me?.user.id,
-    me?.profile?.complete,
+    authenticatedUserId,
+    complete,
   ]);
 
   const openChat = (id: string) => navigate("chats", id);
-  const complete = Boolean(me?.profile?.complete);
   const active =
     route.view === "admin" || route.view === "saved" ? "me" : route.view;
   const activeIndex = destinations.findIndex(({ view }) => view === active);
@@ -169,6 +275,31 @@ export default function Application() {
     !inConversation &&
     !route.profile &&
     (route.view === "memes" || route.view === "matches");
+  const sessionMatchVisible =
+    sessionMatchOpen &&
+    complete &&
+    sessionMatchUserId === authenticatedUserId &&
+    sessionPopupGeneration.current === currentAuthGeneration;
+  const handleSessionMatched = useCallback(
+    (matchId: string) => {
+      if (
+        !sessionMatchOpenRef.current ||
+        !sessionMatchUserId ||
+        sessionMatchUserId !== activeUserId.current ||
+        currentAuthGeneration !== authGeneration.current ||
+        sessionPopupGeneration.current !== authGeneration.current ||
+        !sessionPopupShown.current
+      )
+        return;
+      setSessionMatchOpen(false);
+      navigate("chats", matchId);
+    },
+    [
+      currentAuthGeneration,
+      navigate,
+      sessionMatchUserId,
+    ],
+  );
 
   return (
     <div className="app-canvas">
@@ -258,8 +389,8 @@ export default function Application() {
             route.profile ? (
               <PublicProfileScreen
                 profileId={route.profile}
+                onMatched={(matchId) => openChat(matchId)}
                 onBack={() => navigate("matches")}
-                onMatched={() => navigate("chats")}
               />
             ) : (
               <DiscoverScreen
@@ -297,9 +428,20 @@ export default function Application() {
             <FeedScreen
               postId={route.postId ?? undefined}
               onViewProfile={(id) => navigate("matches", null, false, id)}
+              onPositiveReaction={onPositiveReaction}
             />
           )}
         </main>
+        {sessionMatchVisible && (
+          <SessionMatch
+            candidate={sessionCandidate}
+            loading={sessionCandidateLoading}
+            error={sessionCandidateError}
+            onRetry={() => void loadSessionCandidate()}
+            onClose={() => setSessionMatchOpen(false)}
+            onMatched={handleSessionMatched}
+          />
+        )}
         {complete && !loading && !error && !inConversation && (
           <nav className="bottom-nav" aria-label="Main navigation">
             <span

@@ -10,8 +10,7 @@ The prototype must support this complete flow:
 2. The user reacts explicitly to official X posts and, when available, locally generated image or video memes.
 3. The app builds an explainable meme taste profile.
 4. The app ranks compatible people.
-5. Two users can like each other and create a match.
-6. A match can exchange basic chat messages.
+5. An eligible profile like creates an immediate match, and matched users can exchange basic chat messages.
 
 The matching logic should be easy to explain, deterministic, and credible in a hackathon pitch. It should not require model training, embeddings, or a vector database.
 
@@ -26,7 +25,7 @@ The matching logic should be easy to explain, deterministic, and credible in a h
 - Controlled meme tag taxonomy.
 - Like, pass, and strong-like reactions.
 - Explainable compatibility scores.
-- Profile discovery, mutual matching, and basic chat.
+- Profile discovery, immediate profile matching, and basic chat.
 - Seeded users and reaction histories for a deterministic demo.
 - A reset mechanism that restores the demo state.
 
@@ -83,7 +82,7 @@ Use clear feature boundaries without creating unnecessary layers.
 | `features/auth` | Session and profile setup behavior |
 | `features/memes` | Feed, reactions, generation, and media handling |
 | `features/matching` | Taste vectors, compatibility scores, and explanations |
-| `features/matches` | Profile decisions and mutual-match creation |
+| `features/matches` | Profile decisions, immediate match creation, and chat entry |
 | `features/chat` | Match-gated messages |
 | `db` | Schema, migrations, queries, and deterministic seed data |
 | `lib/xai` | Server-only xAI client and response mapping |
@@ -103,6 +102,7 @@ Environment values:
 | `BETTER_AUTH_SECRET` | Session signing secret |
 | `APP_BASE_URL` | Local application origin |
 | `DEMO_MODE` | Enables seeded personas and demo reset controls |
+| `MEDIA_DIR` | Optional local directory for generated media; defaults to `./data/media` |
 
 The official X feed and deterministic demo seed do not require `XAI_API_KEY`. The application must fail clearly at the generation route when a funded key or model access is absent. Never expose `XAI_API_KEY` in browser code, serialized page data, or client logs.
 
@@ -168,7 +168,7 @@ Stores a user's decision about another person.
 
 ### `matches`
 
-Stores mutual user matches.
+Stores active profile matches.
 
 - ID
 - Canonically ordered user A and user B IDs
@@ -195,16 +195,16 @@ Only members of an active match may read or create its messages.
 
 Do not let the optional Studio model invent arbitrary labels. Select tags before generation, then build the prompt from those tags. Official X rows use their approved source category as a topic tag, so the same vocabulary remains available for matching.
 
-### Current taxonomy, version 2
+### Current taxonomy, version 3
 
 | Dimension | Values |
 | --- | --- |
 | Tone | absurd, wholesome, cursed, deadpan, dark, cringe |
 | Format | reaction, POV, fake screenshot, starter pack, deep-fried |
-| Topic | political, italian-brainrot, skibidi-toilet, larping, cats, doomscrolling, corporate-core, corecore, rage-bait, sigma-grindset, medieval, niche-jobs, phonk |
+| Topic | political, political-shitposts, brainrot, italian-brainrot, skibidi-toilet, larping, gooning, dating, developer-humor, cats, doomscrolling, corporate-core, corecore, rage-bait, sigma-grindset, medieval, niche-jobs, phonk |
 | Chaos | integer from 1 through 5 |
 
-The approved official seed contains exactly 39 X posts, three posts in each of the 13 topics. Each row stores one source category tag, source URL, author, numeric status ID, and source media type. Two source rows are text-only. Source media types may also identify image, video, mixed, or unknown content; these values describe the original X post and do not imply a local asset.
+The approved official source archive contains 239 X posts. Every row retains its source category, canonical URL, author, caption, numeric status ID, and source media type; the archive also keeps provenance metadata for the collection. Source media types may identify image, video, mixed, or text content and do not imply a local asset.
 
 Optional locally generated memes should have:
 
@@ -243,13 +243,13 @@ Store a taxonomy version on every meme. Changes to the vocabulary should create 
 
 The normal feed is seeded from `db/x-posts.json`, not from generated assets:
 
-- `db:seed` synchronizes the 39 approved official X rows and resets the fictional demo state.
+- `db:seed` synchronizes the 239 approved official X rows and resets the fictional demo state.
 - Seeding makes no xAI requests, does not require `XAI_API_KEY`, and does not create local image or video assets.
 - The active card may load the X widget when the browser has internet access and the post remains embeddable.
 - A blocked, deleted, or unavailable post keeps its stored caption and source link, with a retry action where appropriate.
 - The app can deep-link to an official row with `/?view=memes&post=x-<status-id>` and also exposes the original `xPost.url`.
 
-Manual generation remains optional. **Me → Open media studio** starts one deliberate paid image or six-second video job using the controlled taxonomy. Provider URLs are temporary, so completed media is downloaded and marked ready only after the local file is durable. Pending, done, failed, and expired states remain explicit, and the browser uses bounded polling rather than an unbounded worker.
+Manual generation remains optional. **Profile → Open media studio** starts one deliberate paid image or six-second video job using the controlled taxonomy. Provider URLs are temporary, so completed media is downloaded and marked ready only after the local file is durable. Pending, done, failed, and expired states remain explicit, and the browser uses bounded polling rather than an unbounded worker.
 
 ### Safety and reliability
 
@@ -276,7 +276,7 @@ Use JSON route handlers for interactive client operations. Auth routes remain ow
 | `POST /api/reactions` | Create or replace one meme reaction |
 | `GET /api/tasteprint` | Return derived tag weights and explanation data |
 | `GET /api/candidates` | Return preference-filtered compatible profiles |
-| `POST /api/profile-decisions` | Store like or pass and create a mutual match when applicable |
+| `POST /api/profile-decisions` | Store a profile decision and create an immediate match for an eligible like |
 | `GET /api/matches` | List active matches for the current user |
 | `GET /api/matches/:id/messages` | Return messages for an authorized match member |
 | `POST /api/matches/:id/messages` | Create a message for an authorized match member |
@@ -372,18 +372,16 @@ Do not call the score scientific, predictive, or a guarantee of relationship suc
 
 Calculate candidates on request for the prototype. The dataset is small enough that loading user vectors and scoring eligible seeded users is simpler than maintaining a cache. Add precomputation only if measured latency requires it.
 
-## 12. Mutual Match Creation
+## 12. Profile Match Creation
 
-Compatibility ranking does not create a match by itself.
+Compatibility ranking identifies eligible profiles, but a profile match does not require a reciprocal decision.
 
-1. User A likes User B.
-2. The server stores the decision once.
-3. The server checks for an existing reciprocal like.
-4. If present, create one match for the canonical user pair inside a transaction.
-5. Persist the current compatibility explanation with the match.
-6. Return a match-created response so the UI can show the reveal.
+1. The user likes an eligible profile.
+2. The server stores the decision once and creates one canonical match inside a transaction.
+3. The server persists the current compatibility explanation with the match.
+4. The server returns a match-created response so the UI can show the reveal and open the real chat.
 
-A repeated request must return the existing match rather than create a duplicate.
+A repeated request returns the existing match rather than creating a duplicate. A passed, blocked, unavailable, or otherwise ineligible profile cannot create a match.
 
 ## 13. Chat
 
@@ -417,16 +415,16 @@ The project must be presented as a prototype, not a production-ready dating serv
 
 Create deterministic seed data for:
 
-- The 39 approved official X posts in `db/x-posts.json`, exactly three per topic across 13 topics.
+- The 239 approved official X posts in `db/x-posts.json`, with source URL, author, caption, media type, and collection provenance.
 - 30 fictional adult personas with multiple preference combinations.
 - Deterministic reaction histories for the 29 non-Alex personas, based on the official X rows.
 - Several intentionally high-compatibility pairs and several low-compatibility pairs.
-- One seeded reciprocal profile like that can produce a match during the walkthrough.
+- An intentionally eligible profile for the direct-like walkthrough; no reciprocal decision is required.
 - A small existing chat for visual verification.
 
-Alex is the fresh demo user. Alex starts without a tasteprint and with an incomplete profile. The first 15 official posts are ordered for coverage; only explicit reaction buttons persist choices and change `reactionCount`. Scrolling, wheel input, iframe focus, and active-card changes are neutral.
+Alex is the fresh demo user. Alex starts without a tasteprint, with an incomplete profile, and with an empty photo list. The first 15 official posts are ordered for coverage within the larger 239-post archive; only explicit reaction buttons persist choices and change `reactionCount`. Scrolling, wheel input, iframe focus, and active-card changes are neutral.
 
-`db:seed` synchronizes official rows, resets fictional profiles and their reactions, decisions, matches, and messages, and preserves sessions plus unrelated local user content and local uploads. Migration 5 stores official X metadata with nullable local assets. Reseeding prunes obsolete named seed rows while preserving unrelated local rows and their dependents.
+`db:seed` synchronizes official rows, resets fictional profiles and their reactions, decisions, matches, and messages, and preserves sessions plus unrelated local user content and local uploads. Migration 5 stores official X metadata with nullable local assets. Reseeding prunes obsolete named seed rows while preserving unrelated local rows and their dependents. It intentionally resets fictional persona progress; use it to restore the start of the pitch demo, not to preserve a run in progress.
 
 ## 16. Delivery Phases
 
@@ -446,7 +444,7 @@ Acceptance: two seeded users can sign in locally and retain sessions.
 - Keep caption, author, source URL, and retry fallback when a post is blocked, deleted, or the widget is unavailable.
 - Retain manual Studio generation, local persistence, and explicit paid-job state handling as optional functionality.
 
-Acceptance: the 39 official rows remain usable with or without internet access, through an iframe or an honest source fallback, and optional generated media remains local after provider URLs expire.
+Acceptance: the 239 official rows remain usable with or without internet access, through an iframe or an honest source fallback, and optional generated media remains local after provider URLs expire.
 
 ### Phase 3: Reaction loop
 
@@ -463,9 +461,9 @@ Acceptance: neutral scrolling leaves `reactionCount` unchanged, while explicit r
 - Implement preference filtering.
 - Implement weighted vectors and compatibility scores.
 - Return contribution-based explanations.
-- Build profile decisions and transactional mutual matching.
+- Build profile decisions and transactional immediate matching.
 
-Acceptance: seeded high-overlap users rank above low-overlap users, and reciprocal likes create exactly one match.
+Acceptance: seeded high-overlap users rank above low-overlap users, and an eligible profile like creates exactly one match without a reciprocal like.
 
 ### Phase 5: Chat and demo polish
 
@@ -482,28 +480,28 @@ Acceptance: a user can complete the entire demo without manual database changes.
 
 Run the actual application at a mobile viewport and verify:
 
-1. Sign in as the fresh demo user and complete the adult profile gate.
+1. Sign in as the fresh demo user; upload 1–6 valid JPG/PNG/WebP photos, keep Baltimore, MD and the default nearby-demo preferences, and complete the adult profile gate.
 2. Scroll through the first official X post and confirm the active ID changes without a reaction request or a `reactionCount` change.
-3. Confirm that only one active X iframe is mounted. Leaving a local video card with the keyboard removes its video iframe.
-4. Click an explicit reaction on each of 15 official posts and confirm that the count, tasteprint, and feed advance change only after the click.
-5. With internet access, exercise an image post, a video post, and a text-only post and confirm embeddable rows render through the X widget when available. Without external access, confirm the caption, honest status, Retry action, and original source link remain usable.
-6. Open a shared deep link such as `/?view=memes&post=x-<status-id>` and confirm the post loads or falls back to the feed without losing the source URL.
-7. Open candidates and confirm the intended seeded profile ranks first.
-8. Like that profile and trigger the seeded reciprocal match.
-9. Open chat, explicitly send a message tied to a shared meme, reload, and confirm the state persists.
+3. Confirm that no more than five warmed X card embeds are mounted (previous, active, and next three). Leaving a local video card with the keyboard removes its video iframe.
+4. Click explicit **Like** or **Strong like** on five distinct official posts and confirm that only each new successful positive changes the count, tasteprint, and feed advance; confirm the one-time suggestion popup appears on the fifth.
+5. Confirm that the positive-reaction counter survives in-app navigation but resets on a full reload or new app open, and that replacing or repeating a reaction does not increment it.
+6. With internet access, exercise an image post, a video post, and a text-only post and confirm embeddable rows render through the X widget when available. Without external access, confirm the stored caption, honest fallback, Retry action when useful, and original source link remain usable.
+7. Open a shared deep link such as `/?view=memes&post=x-<status-id>` and confirm the post loads or falls back to the feed without losing the source URL.
+8. Open Discover, like the intended eligible profile, and confirm that the real match is created immediately without a reciprocal decision.
+9. Open the real chat, explicitly send a message tied to a shared meme, reload, and confirm the state persists.
 10. Reset the demo and confirm fictional state returns while sessions and unrelated local content remain.
 
 ### Focused automated coverage
 
 Keep permanent tests only for behavior that is easy to regress:
 
-- Official seed synchronization: 39 rows, 13 topics at three rows each, and preservation of unrelated local rows and dependents.
+- Official seed synchronization: 239 rows, preserved source provenance, and preservation of unrelated local rows and dependents.
 - Migration 5 support for `type = x`, nullable local assets, and foreign-key dependents.
 - Reaction uniqueness and replacement.
 - Compatibility ordering for a fixed dataset.
 - Cold-start behavior below the reaction threshold.
 - Preference filtering before scoring.
-- Idempotent mutual-match creation.
+- Idempotent immediate-match creation for an eligible profile like.
 - Message authorization.
 - Video job state mapping for done, failed, and expired responses.
 
@@ -545,13 +543,13 @@ These paid checks are separate from the official X feed and are not required for
 The MVP is complete when:
 
 - A clean checkout can run locally with documented environment variables and no xAI key.
-- The database can be migrated and seeded deterministically with 39 official X rows and 30 fictional adult personas.
+- The database can be migrated and seeded deterministically with 239 official X rows and 30 fictional adult personas.
 - Official source metadata and deep links remain available without local media files.
 - Optional generated media is locally persistent after provider URLs expire.
 - A fresh user can build a tasteprint through explicit reactions.
 - Candidate order is produced by the documented matching algorithm.
 - Compatibility explanations match stored reaction data.
-- Reciprocal profile likes create one match.
+- An eligible profile like creates one match without reciprocal gating.
 - Matched users can exchange persistent messages.
 - The full flow works at a mobile viewport and in the centered desktop presentation.
 - The demo can be reset without regenerating paid media or deleting unrelated local uploads.
@@ -593,16 +591,28 @@ If using a reverse proxy, overwrite client-supplied forwarding/IP headers at tha
 ### Migrate, seed the official feed, and run
 
 ```sh
+# Keep the pitch run isolated from any configured local database.
+export DATABASE_URL=file:./data/pitch-demo.db
+export APP_BASE_URL=http://localhost:3000
+export DEMO_MODE=true
 npm run db:migrate
 npm run db:seed
 npm run dev
 ```
+Open `http://localhost:3000` after confirming port 3000 is free. The exported `DATABASE_URL` creates a fresh pitch-only SQLite file; the existing `.env` still supplies `BETTER_AUTH_SECRET`. `db:migrate` applies the idempotent local migration runner. `db:seed` imports the 239 approved official X posts and creates or resets 30 fictional adult personas. It makes no provider calls and does not require `XAI_API_KEY`. If another port is required, change `APP_BASE_URL` and start the app on the matching port.
 
-Open `http://localhost:3000`. `db:migrate` applies the idempotent local migration runner. `db:seed` imports the 39 approved official X posts and creates or resets 30 fictional adult personas. It makes no provider calls and does not require `XAI_API_KEY`.
+The archive contains 239 approved official posts. Each row stores the original status ID, canonical source URL, author, caption text, and source media type, while the archive-level source record preserves collection provenance. Official rows have no local asset or poster path, so the feed can render an X widget when the browser has internet access and the post is still available. If X blocks, deletes, rate-limits, or fails to embed a post, the app keeps the stored text and source link and shows an honest fallback; a retry is useful only when the source may become available again.
 
-The official seed has 13 categories with three source rows each. Every row stores the original status ID, canonical source URL, author, caption text, and source media type. Two rows are text-only. Official rows have no local asset or poster path, so the feed can render an X widget when the browser has internet access and the post is still available. If X blocks, deletes, or fails to embed a post, the app keeps the stored text and source link, shows an honest fallback, and offers retry when retrying can help.
+The seed synchronizer prunes obsolete named seed rows from older library versions, while preserving unrelated user-owned local uploads, manually generated media, and their database dependents. Resetting fictional state preserves sessions and local media files. Do not treat `db:seed` as a way to preserve current fictional demo progress: it intentionally resets fictional persona progress.
 
-The seed synchronizer prunes obsolete named seed rows from older library versions, while preserving unrelated user-owned local uploads, manually generated media, and their database dependents. Resetting fictional state preserves sessions and local media files. Do not treat `db:seed` as a way to preserve the current fictional demo progress.
+This 239-post expansion is checked into `db/x-posts.json` with its raw discovery/provenance record; ordinary pitch startup does not rerun paid collection or archive sync. For reproduction or audit, the bounded discovery and non-destructive validation commands are:
+
+```sh
+npm run x-posts:discover -- --target 200 --max-calls 40 --batch-size 10 --parallel 2 --output db/x-post-discovery.json
+npm run x-posts:sync -- --input db/x-post-discovery.json --dry-run
+```
+
+This expansion deliberately appends the original 39-post archive with 200 new citation-verified posts and rejects status IDs already in the archive. Omit `--dry-run` only after reviewing provenance and candidates, then run `npm run x-posts:seed` to import official rows without resetting fictional profiles or reactions. Further expansion requires updating the expected archive count and category quotas before discovery. Use `npm run db:seed` only when intentionally restoring the full fictional demo state; it resets fictional persona progress. These discovery and sync commands are not needed for the 239-post pitch demo.
 
 For a production-mode local run:
 
@@ -650,17 +660,22 @@ Every demo account uses the password `Memeant-demo-2026!`. The 30 fictional adul
 | Leo | `leo@demo.local` |
 | Mina | `mina@demo.local` |
 
-These are fictional adult fixtures, not real people or production credentials. Sign in as Alex, complete the profile, select exactly three initial humor tones, and give the first 15 official posts an explicit normal **LOL** reaction. That sequence uses the coverage-ordered X source rows and produces the intended top-ranked Jules profile. Jules has a seeded reciprocal like, so liking Jules creates a mutual match. The suggested chat opener only fills the composer; press **Send message** to persist it with the shared meme reference.
+For tomorrow's pitch demo, use this order:
 
-Scrolling is neutral. Moving the feed, using the mouse wheel, or wheel-scrolling an embed may change the active card, but does not create a reaction or change `reactionCount`. Focusing an embed is also neutral. Only an explicit **LOL**, **Nah**, or **Strong like** click writes a reaction. The active card loads the only live X iframe; inactive cards show metadata fallback instead.
-
-Alex starts with an incomplete profile and no reaction-derived tasteprint; initial profile tags do not manufacture a compatibility score. **Me → Reset demo** restores fictional profiles, reactions, decisions, matches, and messages while keeping account sessions, local uploads, and optional manually generated media. Alex returns to onboarding after reset. Complete the adult profile gate again before reading the protected feed, tasteprint, candidates, or messages.
+1. Sign in as Alex with `alex@demo.local` and password `Memeant-demo-2026!`. In onboarding, upload one real JPG, PNG, or WebP photo (the profile accepts 1–6 valid photos); keep the Baltimore, MD location and default nearby-demo preferences, complete the adult profile gate, and select exactly three initial humor tones.
+2. In **Home**, react explicitly to five distinct official posts with **Like** or **Strong like**. Scrolling, wheel input, iframe focus, and moving between cards are neutral; only a successful new positive reaction counts.
+3. On the fifth new positive reaction, the app shows one suggestion popup. The counter is in memory for the current document lifetime: in-app navigation keeps it, while a full reload or a new app open resets it to zero. Replacing a reaction or repeating a reaction does not count as another positive.
+4. Choose **Match** in the popup. This creates the real eligible profile match and navigates to the real chat; it is not a fake preview and it does not wait for a reciprocal decision. To show the independent Discover path, open **Discover**, like any currently eligible candidate, and use its match/chat action; an eligible profile like creates the match immediately.
+5. In chat, review the suggested opener, then press **Send message** yourself. Reload the page and confirm the match, sent message, profile decision, and meme reactions remain persisted before continuing the pitch.
+6. Use **Profile → Reset demo** only when restarting the walkthrough. It restores fictional profiles, reactions, decisions, matches, and messages, returns Alex to onboarding, preserves account sessions and local uploads, and never regenerates or deletes optional manually generated media. `npm run db:seed` has the same intentional fictional-progress reset behavior and is not a way to preserve a run.
+7. The feed contains the expanded 239-post X archive. Its rows retain source URLs, authors, captions, media types, and collection provenance. The active card may use the third-party X widget when the network and post availability allow it; if X is blocked, deleted, rate-limited, or unavailable, use the stored caption, source link, and honest fallback instead. No xAI key or paid generation is needed for this walkthrough.
+8. The feed fits the viewport without relying on page overflow and keeps the active card, previous card, and next three cards warm for responsive navigation; all five warmed X cards may retain native X iframes, while unavailable posts use the stored fallback. Do not present widget availability as proof that every third-party post is still embeddable.
 
 Shared app links use `/?view=memes&post=x-<status-id>`. The post screen loads that official row first, then falls back to the normal feed if the row is unavailable. Every official card also retains an **Open original on X** link to the stored source URL.
 
 ### Run bounded browser checks
 
-Playwright uses one serial worker against an already-running application. It does not spawn a second server. Use a disposable demo database: the focused flow resets fictional progress, exercises actual authentication and profile setup, checks neutral scrolling and explicit reactions, verifies the Jules ranking and mutual match, sends a shared-meme message, and checks reload/reset behavior. External X widget availability is a separate manual check; the automated fallback path must not issue paid xAI requests.
+Playwright uses one serial worker against an already-running application. It does not spawn a second server. Use a disposable demo database: the focused flow exercises actual authentication and profile setup, neutral scrolling and explicit reactions, the fifth-positive suggestion, immediate Discover matching, real chat navigation, message persistence, and reload/reset behavior. External X widget availability is a separate manual check; the automated fallback path must not issue paid xAI requests.
 
 ```sh
 npx playwright install chromium
@@ -674,7 +689,25 @@ For focused non-browser coverage, run only the bounded seed, matching, and media
 npx tsx --test tests/x-post-seeds.test.ts tests/core.test.ts tests/video.test.ts
 ```
 
-These commands are verification instructions only. This plan does not claim a final test or build pass. On a minimal Linux host, install Playwright's Chromium system dependencies as well (`npx playwright install --with-deps chromium`, with the required package-management privileges). `PLAYWRIGHT_BASE_URL` must match the application's `APP_BASE_URL`. Review the actual UI at 320, 390, 430, 768, and 1280 pixels wide; automated overflow checks do not replace visual checks for spacing, clipping, or obscured controls.
+Use these as verification instructions, not as a substitute for the manual browser pass. Review the actual UI at 320, 390, 430, 768, 1280, and 1366 pixels wide; automated overflow checks do not replace visual checks for spacing, clipping, or obscured controls.
+
+### Observed manual pitch proof
+
+The manual browser pass observed:
+
+- At 320, 390, 430, 768, 1280, and 1366 pixels, native X widgets and reaction controls fit with zero horizontal overflow.
+- At 430, 768, and 1280 pixels, navigation and reload produced zero page errors. Scrolling six posts kept at most five X widgets mounted, and the warmed next iframe was reused.
+- After two positive reactions, in-app navigation, and three more positive reactions, the fifth-positive suggestion popup appeared exactly once; two further positive reactions produced no second popup.
+- Choosing Match opened the actual chat. A sent message with the shared meme persisted after reload.
+- Discover handled a 90px drag and return, an interrupted return followed by a new drag, secondary-touch input, and the 240ms exit transition.
+- Public profiles loaded their liked X posts before their photos.
+
+Final curated-run evidence:
+
+- Fresh Alex started with zero photos; uploading one valid JPEG completed onboarding and advanced into the feed. The native original video `2053638074400231779` played for 7.24 seconds without a video error, and the curated larper image `2099933836062630250` was fully visible at 390×844; reaction controls fit and a Like remained pressed/disabled after reload with opacity 1.
+- Native X rendering remains third-party dependent: **Show more** or **Open original on X** can leave the app for X, and blocked, deleted, rate-limited, or unavailable posts must use the stored caption/source fallback.
+- The final archive has 239 unique rows: the original 39 plus exactly 200 additions. All 200 additions have verified raw citation links across 37 recorded requests and 35 raw responses. The user database retained 239 active official rows, 15 other-table counts, and the original 39 timestamps.
+- Final checks passed: 29 unit tests via `npx tsx --test --test-concurrency=2 tests/*.test.ts`, six Playwright tests with one worker (28.9s), `tsc --noEmit`, and the production build.
 
 ### Provision real xAI media deliberately
 
@@ -685,7 +718,7 @@ Manual prerequisites for live generation:
 - Permit outbound HTTPS to xAI and its approved media delivery hosts. Ensure the configured SQLite/media volume is writable and has sufficient free space.
 - Restrict access before attaching a funded key. Authenticated development users can use the Studio. This is not a production administrator provisioning system. The publicly documented fixture password must not protect a publicly exposed funded generation endpoint; keep the demo behind trusted-network or upstream access controls.
 
-**Me → Open media studio** starts one explicit paid image or six-second video job using the selected controlled taxonomy. Approve the paid-request checkbox first. The browser disables duplicate submissions and retains the same settings and idempotency token when a response is uncertain; use **Retry same job** on that screen rather than creating another paid request. Pending jobs are checked at five-second intervals, at most 60 times over five minutes per checking window. Checks stop on leaving the screen, pause in hidden tabs, and can be resumed explicitly without creating a paid job. Failed and expired jobs remain distinct from ready media.
+**Profile → Open media studio** starts one explicit paid image or six-second video job using the selected controlled taxonomy. Approve the paid-request checkbox first. The browser disables duplicate submissions and retains the same settings and idempotency token when a response is uncertain; use **Retry same job** on that screen rather than creating another paid request. Pending jobs are checked at five-second intervals, at most 60 times over five minutes per checking window. Checks stop on leaving the screen.
 
 For a one-asset integration smoke check, choose one media type in the Studio, approve the paid request, wait for its bounded status checks, and inspect the resulting local `/api/media/:id` asset after completion. Verify local serving after an application restart. Do not infer provider success from the official X feed or from a mocked response. These checks require a funded key and model access and are not part of `db:seed`.
 
@@ -704,4 +737,4 @@ Cleanup deletes only unreferenced local media files or abandoned `.demo-video-*`
 
 This remains a single-process, local-storage dating prototype: no production moderation team, identity verification, account recovery/email delivery workflow, realtime messaging, distributed job worker, cloud media store, or production-scale operations are supplied. Block/report controls and an 18+ profile gate do not make a public launch safe. Review submitted reports manually, keep real personal data out of the fixture, and treat compatibility as explainable entertainment rather than a scientific relationship prediction.
 
-Standalone/serverless deployment is not supported because the prototype depends on its complete single-host application, SQLite database, and configured persistent directories. No final build or test result is claimed in this plan.
+Standalone/serverless deployment is not supported because the prototype depends on its complete single-host application, SQLite database, and configured persistent directories. The curated local verification evidence is recorded above; optional live xAI generation remains unverified without a funded key and model access.

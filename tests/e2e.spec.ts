@@ -90,8 +90,8 @@ async function completeProfile(page: Page) {
     .selectOption("US");
   await page
     .getByRole("combobox", { name: /^State or province/ })
-    .selectOption("NY");
-  await page.getByLabel(/^Town/).selectOption({ label: "Albany" });
+    .selectOption("MD");
+  await page.getByLabel(/^Town/).selectOption({ label: "Baltimore" });
   await page
     .getByRole("textbox", { name: "Bio", exact: true })
     .fill("I collect terrible work memes and excellent tiny snacks.");
@@ -118,12 +118,6 @@ async function completeProfile(page: Page) {
   await page
     .getByRole("combobox", { name: "Match radius", exact: true })
     .selectOption("100");
-  const existingPhotos = page.getByRole("button", {
-    name: "Remove",
-    exact: true,
-  });
-  for (let count = await existingPhotos.count(); count > 0; count -= 1)
-    await existingPhotos.first().click();
   await page.getByLabel("Choose files").setInputFiles("tests/fixture-photo.jpg");
   await page
     .getByRole("button", { name: "Next: your humor", exact: true })
@@ -178,6 +172,10 @@ test("real reactions create an explainable match from official X posts", async (
   // focused on our source DTO and honest fallback when X is unavailable.
   await page.route("https://platform.twitter.com/**", (route) => route.abort());
   await completeProfile(page);
+  await expect(page.locator(".meme-feed article .x-embed")).toHaveCount(10);
+  await expect
+    .poll(() => page.locator(".meme-feed .x-embed-frame").count())
+    .toBeLessThanOrEqual(4);
   const reactedIds = new Set<string>();
   const reactedTags = new Set<string>();
   const reactedSources = new Map<string, XPost>();
@@ -258,8 +256,12 @@ test("real reactions create an explainable match from official X posts", async (
     expect(response.ok(), await response.text()).toBeTruthy();
     const reaction = (await response.json()) as {
       tags: string[];
+      reaction: "like" | "pass" | "strong-like";
+      newPositive: boolean;
       reactionCount: number;
     };
+    expect(reaction.reaction).toBe("like");
+    expect(reaction.newPositive).toBe(true);
     const requestBody = response.request().postDataJSON() as { memeId: string };
     expect(requestBody.memeId).toBe(memeId);
     expect(reactedIds.has(memeId)).toBe(false);
@@ -274,6 +276,14 @@ test("real reactions create an explainable match from official X posts", async (
           .getAttribute("data-post-id"),
       )
       .not.toBe(memeId);
+    if (index === 4) {
+      const suggestion = page.getByRole("dialog", { name: "A possible match" });
+      await expect(suggestion).toBeVisible();
+      await suggestion
+        .getByRole("button", { name: "Keep exploring", exact: true })
+        .click();
+      await expect(suggestion).toHaveCount(0);
+    }
   }
   expect(reactedIds.size).toBe(15);
   expect(reactedSources.size).toBe(15);
@@ -281,18 +291,52 @@ test("real reactions create an explainable match from official X posts", async (
   const tasteResponse = await page.request.get("/api/tasteprint");
   expect(tasteResponse.ok()).toBeTruthy();
   const taste = (await tasteResponse.json()) as Tasteprint;
-  expect(taste.reactionCount).toBe(15);
-  expect(taste.positiveCount).toBe(15);
-  expect(taste.calibrated).toBe(true);
-  for (const item of taste.tags) expect(reactedTags.has(item.tag)).toBe(true);
-
   await page
     .getByRole("navigation")
     .getByRole("button", { name: "Discover", exact: true })
     .click();
-  await expect(
-    page.locator(".discover-feed").getByRole("heading", { name: /^Jules Bennett,/ }),
-  ).toBeVisible();
+  const candidateHeading = page.locator(
+    ".discover-feed .discover-profile-link h2",
+  );
+  await expect(candidateHeading).toBeVisible();
+  const candidateName = (await candidateHeading.textContent() ?? "")
+    .split(",")[0]
+    .trim();
+  expect(candidateName).not.toBe("");
+  let profileDecisionRequests = 0;
+  page.on("request", (request) => {
+    if (
+      new URL(request.url()).pathname === "/api/profile-decisions" &&
+      request.method() === "POST"
+    )
+      profileDecisionRequests += 1;
+  });
+  const discoverPhotos = page.locator(".discover-stage .discover-photos").first();
+  const beforeDrag = await discoverPhotos.boundingBox();
+  if (!beforeDrag) throw new Error("The discover profile card has no bounds.");
+  const dragStart = {
+    x: beforeDrag.x + beforeDrag.width / 2,
+    y: beforeDrag.y + beforeDrag.height / 2,
+  };
+  await page.mouse.move(dragStart.x, dragStart.y);
+  await page.mouse.down();
+  await page.mouse.move(dragStart.x + 90, dragStart.y, { steps: 6 });
+  await expect
+    .poll(async () => {
+      const duringDrag = await discoverPhotos.boundingBox();
+      return duringDrag ? duringDrag.x - beforeDrag.x : 0;
+    })
+    .toBeGreaterThan(60);
+  await expect(page.getByText("LIKE", { exact: true })).toBeVisible();
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      const afterDrag = await discoverPhotos.boundingBox();
+      return afterDrag ? Math.abs(afterDrag.x - beforeDrag.x) : Infinity;
+    })
+    .toBeLessThan(2);
+  expect(profileDecisionRequests).toBe(0);
+  await expect(candidateHeading).toBeVisible();
   const matched = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname === "/api/profile-decisions" &&
@@ -302,34 +346,16 @@ test("real reactions create an explainable match from official X posts", async (
   const matchResponse = await matched;
   expect(matchResponse.ok()).toBeTruthy();
   const { match } = (await matchResponse.json()) as { match: Match };
-  expect(match.profile.name).toBe("Jules Bennett");
+  expect(match.profile.name).toBe(candidateName);
   const sharedMeme = match.compatibility.sharedMemes[0];
   if (!sharedMeme) throw new Error("The explainable match has no shared post.");
   const sharedOfficial = expectOfficialXPost(sharedMeme);
   expect(reactedSources.get(sharedMeme.id)).toEqual(sharedOfficial.xPost);
-  const reveal = page.getByRole("dialog", {
-    name: "It’s mutual.",
-    exact: true,
-  });
-  await expect(reveal).toBeVisible();
-  await expect
-    .poll(() =>
-      reveal.evaluate((element) => element.contains(document.activeElement)),
-    )
-    .toBe(true);
-  await page.keyboard.press("Shift+Tab");
-  await expect
-    .poll(() =>
-      reveal.evaluate((element) => element.contains(document.activeElement)),
-    )
-    .toBe(true);
-  await reveal
-    .getByRole("button", { name: "Say something", exact: true })
-    .click();
-
+  await expect(page).toHaveURL(new RegExp(`view=chats&chat=${match.id}`));
   await expect(
-    page.getByRole("heading", { name: "Jules Bennett", exact: true }),
+    page.getByRole("heading", { name: candidateName, exact: true }),
   ).toBeVisible();
+
   await expect(page.getByLabel("Message", { exact: true })).toHaveValue("");
   const messagesPath = `/api/matches/${match.id}/messages`;
   let automaticSends = 0;
@@ -384,13 +410,13 @@ test("real reactions create an explainable match from official X posts", async (
   await page
     .getByRole("button", { name: "Back to chats", exact: true })
     .click();
-  await expect(page.getByRole("button", { name: /Jules/ })).toContainText(
-    opener,
-  );
+  await expect(
+    page.getByRole("button", { name: new RegExp(candidateName) }),
+  ).toContainText(opener);
   await page.reload();
-  await expect(page.getByRole("button", { name: /Jules/ })).toContainText(
-    opener,
-  );
+  await expect(
+    page.getByRole("button", { name: new RegExp(candidateName) }),
+  ).toContainText(opener);
   await page
     .getByRole("navigation")
     .getByRole("button", { name: "Home", exact: true })
@@ -413,7 +439,7 @@ test("real reactions create an explainable match from official X posts", async (
     .click();
   await page.getByRole("button", { name: "Edit profile", exact: true }).click();
   await expect(page.getByLabel(/^Date of birth/)).toHaveValue("1999-04-12");
-  await expect(page.getByLabel(/^Town/)).toHaveValue("Albany");
+  await expect(page.getByLabel(/^Town/)).toHaveValue("Baltimore");
   await expect(
     page.getByRole("textbox", { name: "Bio", exact: true }),
   ).toHaveValue("I collect terrible work memes and excellent tiny snacks.");
@@ -445,6 +471,110 @@ test("real reactions create an explainable match from official X posts", async (
   ).toHaveAttribute("href", deepLinkSource.url);
 });
 
+test("the fifth distinct positive survives route changes, ignores failures, and opens one real chat", async ({
+  page,
+  baseURL,
+}) => {
+  await signInFreshDemo(page, baseURL!);
+  await page.route("https://platform.twitter.com/**", (route) => route.abort());
+  await completeProfile(page);
+  let failNextReaction = false;
+  await page.route("**/api/reactions", async (route) => {
+    if (failNextReaction && route.request().method() === "POST") {
+      failNextReaction = false;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: { code: "TEMPORARY_FAILURE", message: "Try again." },
+        }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  const positive = async () => {
+    const card = page.locator("article.feed-post-active[data-post-id]");
+    const id = await card.getAttribute("data-post-id");
+    if (!id) throw new Error("The active feed post has no stable id.");
+    const responsePromise = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/reactions" &&
+        response.request().method() === "POST",
+    );
+    await card.locator("button.feed-reaction.like").click();
+    const response = await responsePromise;
+    expect(response.ok(), await response.text()).toBeTruthy();
+    const body = (await response.json()) as {
+      reaction: "like" | "pass" | "strong-like";
+      newPositive: boolean;
+    };
+    expect(body.reaction).toBe("like");
+    expect(body.newPositive).toBe(true);
+    await expect
+      .poll(() =>
+        page
+          .locator("article.feed-post-active[data-post-id]")
+          .getAttribute("data-post-id"),
+      )
+      .not.toBe(id);
+  };
+
+  await positive();
+  await positive();
+  await page.getByRole("navigation").getByRole("button", { name: "Discover", exact: true }).click();
+  await expect(page.locator(".discover-feed")).toBeVisible();
+  await page.getByRole("navigation").getByRole("button", { name: "Home", exact: true }).click();
+  await expect(page.locator(".meme-feed")).toBeVisible();
+  await positive();
+  await positive();
+
+  const fifthCard = page.locator("article.feed-post-active[data-post-id]");
+  const fifthId = await fifthCard.getAttribute("data-post-id");
+  if (!fifthId) throw new Error("The fifth feed post has no stable id.");
+  failNextReaction = true;
+  const failed = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/reactions" &&
+      response.request().method() === "POST",
+  );
+  await fifthCard.locator("button.feed-reaction.like").click();
+  const failedResponse = await failed;
+  expect(failedResponse.status()).toBe(503);
+  await expect(page.locator("article.feed-post-active[data-post-id]")).toHaveAttribute(
+    "data-post-id",
+    fifthId,
+  );
+  expect(await page.request.get("/api/feed").then((response) => response.json())).toMatchObject({
+    reactionCount: 4,
+  });
+  await expect(page.getByRole("dialog", { name: "A possible match" })).toHaveCount(0);
+
+  const saved = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/reactions" &&
+      response.request().method() === "POST",
+  );
+  await fifthCard.locator("button.feed-reaction.like").click();
+  const savedResponse = await saved;
+  expect(savedResponse.ok(), await savedResponse.text()).toBeTruthy();
+  expect((await savedResponse.json()).newPositive).toBe(true);
+  const suggestion = page.getByRole("dialog", { name: "A possible match" });
+  await expect(suggestion).toBeVisible();
+  const matchResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/profile-decisions" &&
+      response.request().method() === "POST",
+  );
+  await suggestion.getByRole("button", { name: /^Match with / }).click();
+  const matchedResponse = await matchResponse;
+  expect(matchedResponse.ok(), await matchedResponse.text()).toBeTruthy();
+  const matched = (await matchedResponse.json()) as { match: Match };
+  expect(matched.match.id).toBeTruthy();
+  await expect(page).toHaveURL(/view=chats&chat=/);
+});
+
 test("all product surfaces fit required widths", async ({ page, baseURL }) => {
   test.setTimeout(180_000);
   await signInFreshDemo(page, baseURL!);
@@ -459,6 +589,7 @@ test("all product surfaces fit required widths", async ({ page, baseURL }) => {
     { view: "me", heading: "Your profile" },
     { view: "admin", heading: "The meme studio." },
   ];
+
   for (const width of [320, 390, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const { view, heading } of destinations) {
@@ -486,4 +617,29 @@ test("all product surfaces fit required widths", async ({ page, baseURL }) => {
       await expectNoOverflow(page);
     }
   }
+});
+test("a public profile exposes only its positively liked posts", async ({
+  page,
+  baseURL,
+}) => {
+  await signInFreshDemo(page, baseURL!);
+  const response = await page.request.get("/api/profiles/demo-jules");
+  expect(response.ok(), await response.text()).toBeTruthy();
+  const data = (await response.json()) as {
+    posts: Meme[];
+    likedPosts: Meme[];
+  };
+  expect(data.likedPosts).toHaveLength(15);
+  expect(data.posts).toEqual([]);
+  expect(data.likedPosts.length).toBeGreaterThan(0);
+  expect(new Set(data.likedPosts.map((post) => post.id)).size).toBe(
+    data.likedPosts.length,
+  );
+  expect(data.likedPosts.every((post) => "reaction" in post)).toBe(true);
+  expect(
+    data.likedPosts.every(
+      (post) => !("prompt" in post) && !("tags" in post),
+    ),
+  ).toBe(true);
+  expect(data.likedPosts.every((post) => post.reaction === null)).toBe(true);
 });

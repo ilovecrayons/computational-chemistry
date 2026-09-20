@@ -15,9 +15,14 @@ export const FORMATS = [
 ] as const;
 export const TOPICS = [
   "political",
+  "political-shitposts",
+  "brainrot",
   "italian-brainrot",
   "skibidi-toilet",
   "larping",
+  "gooning",
+  "dating",
+  "developer-humor",
   "cats",
   "doomscrolling",
   "corporate-core",
@@ -28,7 +33,7 @@ export const TOPICS = [
   "niche-jobs",
   "phonk",
 ] as const;
-export const TAXONOMY_VERSION = 2;
+export const TAXONOMY_VERSION = 3;
 
 export interface MemeSpec {
   tone: (typeof TONES)[number];

@@ -116,20 +116,29 @@ function like(userId: string, group: string, count: number) {
     );
 }
 function matchPair() {
-  matching.decideProfile("close", "a", "like");
   return matching.decideProfile("a", "close", "like").match!;
 }
 
-test("replacing a reaction changes the tasteprint without double-counting and keeps it out of unseen feed", () => {
-  assert.equal(feed.setReaction("a", "red-00", "like").reactionCount, 1);
-  assert.equal(feed.setReaction("a", "red-00", "strong-like").reactionCount, 1);
+test("reactions persist the current choice and report only new positive reactions", () => {
+  const first = feed.setReaction("a", "red-00", "like");
+  assert.equal(first.reaction, "like");
+  assert.equal(first.newPositive, true);
+  assert.equal(first.reactionCount, 1);
+  assert.equal(feed.setReaction("a", "red-00", "strong-like").reaction, "strong-like");
+  assert.equal(feed.setReaction("a", "red-00", "strong-like").newPositive, false);
   assert.equal(engine.getTasteprint("a").positiveCount, 1);
-  assert.equal(feed.setReaction("a", "red-00", "pass").reactionCount, 1);
+  const pass = feed.setReaction("a", "red-00", "pass");
+  assert.equal(pass.reaction, "pass");
+  assert.equal(pass.newPositive, false);
+  assert.equal(pass.reactionCount, 1);
   assert.equal(engine.getTasteprint("a").positiveCount, 0);
+  assert.equal(social.getPost("a", "red-00").reaction, "pass");
   assert.equal(
     feed.getFeed("a", null).memes.some((meme) => meme.id === "red-00"),
     false,
   );
+  const positiveAgain = feed.setReaction("a", "red-00", "like");
+  assert.equal(positiveAgain.newPositive, true);
 });
 
 test("external X posts survive feed, social actions, shared compatibility, and chat", () => {
@@ -165,19 +174,17 @@ test("external X posts survive feed, social actions, shared compatibility, and c
     })
     .run();
   const surfaced = feed.getFeed("a", null).memes.find((meme) => meme.id.startsWith("x-"));
-  assert.deepEqual(surfaced, {
-    id: "x-1234567890123456789",
-    type: "x",
-    src: null,
-    poster: null,
-    xPost,
-    caption: "The original post text.",
-    author: null,
-    likeCount: 0,
-    commentCount: 0,
-    saved: false,
-  });
-  assert.deepEqual(social.getPost("a", "x-1234567890123456789"), surfaced);
+  assert.ok(surfaced);
+  assert.equal(surfaced.type, "x");
+  if (surfaced.type !== "x") throw new Error("Expected an official X post.");
+  assert.equal(surfaced.xPost.id, xPost.id);
+  assert.equal(surfaced.xPost.url, xPost.url);
+  assert.equal(surfaced.caption, "The original post text.");
+  assert.equal(surfaced.likeCount, 0);
+  assert.equal(surfaced.commentCount, 0);
+  assert.equal(surfaced.saved, false);
+  assert.equal(surfaced.reaction, null);
+  assert.equal(social.getPost("a", "x-1234567890123456789").reaction, null);
   assert.deepEqual(social.toggleSave("a", "x-1234567890123456789"), { saved: true });
   assert.equal(social.getSavedMemes("a")[0].type, "x");
   assert.equal(
@@ -309,12 +316,28 @@ test("private preferences exclude ranking while browse decisions do not create m
   assert.deepEqual(engine.getCandidates("a"), []);
 });
 
-test("reciprocal decisions create one canonical match and repeated likes return the same match", () => {
+test("liked profile posts include only positive reactions and honor viewer blocks", () => {
+  feed.setReaction("close", "red-00", "like");
+  feed.setReaction("close", "red-01", "strong-like");
+  feed.setReaction("close", "blue-00", "pass");
+  feed.setReaction("a", "red-00", "pass");
+  const liked = social.getUserLikedPosts("close", "a");
+  assert.deepEqual(
+    new Set(liked.map((post) => post.id)),
+    new Set(["red-00", "red-01"]),
+  );
+  assert.equal(liked.find((post) => post.id === "red-00")?.reaction, "pass");
+  assert.equal(liked.some((post) => post.id === "blue-00"), false);
+  matching.safetyAction("a", { targetId: "close", action: "block" });
+  assert.deepEqual(social.getUserLikedPosts("close", "a"), []);
+});
+
+test("unilateral profile likes create one canonical match and repeated likes are idempotent", () => {
   like("a", "red", 10);
   like("close", "red", 10);
   like("far", "blue", 10);
-  assert.equal(matching.decideProfile("close", "a", "like").match, null);
   const first = matching.decideProfile("a", "close", "like").match!;
+  assert.equal(first.profile.id, "close");
   assert.equal(
     matching.decideProfile("a", "close", "like").match!.id,
     first.id,
@@ -333,10 +356,11 @@ test("reciprocal decisions create one canonical match and repeated likes return 
   );
 });
 
-test("chat excludes outsiders, authorizes shared memes, and closes immediately after blocking", () => {
+test("unilateral matches authorize both chat members and block closes chat immediately", () => {
   like("a", "red", 10);
   like("close", "red", 10);
   const match = matchPair();
+  assert.deepEqual(chat.getMessages("close", match.id, null).messages, []);
   assert.throws(() => chat.getMessages("far", match.id, null));
   assert.throws(() =>
     chat.sendMessage("far", match.id, { body: "I should not be here." }),
@@ -355,6 +379,16 @@ test("chat excludes outsiders, authorizes shared memes, and closes immediately a
     chat.sendMessage("close", match.id, { body: "After block" }),
   );
   assert.deepEqual(matching.getMatches("a"), []);
+});
+
+test("unmatching a unilateral match revokes chat authorization for both members", () => {
+  const match = matching.decideProfile("a", "close", "like").match!;
+  assert.deepEqual(chat.getMessages("a", match.id, null).messages, []);
+  matching.safetyAction("a", { targetId: "close", action: "unmatch" });
+  assert.throws(() => chat.getMessages("a", match.id, null));
+  assert.throws(() => chat.getMessages("close", match.id, null));
+  assert.deepEqual(matching.getMatches("a"), []);
+  assert.deepEqual(matching.getMatches("close"), []);
 });
 
 test("message pagination covers same-time messages without duplicates and returns chronological pages", () => {

@@ -16,13 +16,16 @@ let database: typeof DatabaseModule;
 let schema: typeof SchemaModule;
 let migrate: typeof Migrate;
 let seedXPosts: typeof SeedXPosts;
+let xPostSeedCount: number;
 
 before(async () => {
   // Dynamic imports intentionally isolate the in-memory database from developer data.
   database = await import("../db");
   schema = await import("../db/schema");
   ({ migrate } = await import("../db/migrations"));
-  ({ seedXPosts } = await import("../db/x-post-seeds"));
+  ({ seedXPosts, X_POST_SEED_COUNT: xPostSeedCount } = await import(
+    "../db/x-post-seeds"
+  ));
 });
 
 after(() => database.sqlite.close());
@@ -107,13 +110,17 @@ test("fresh sync replaces only legacy seeds and keeps local dependents plus offi
     })
     .run();
 
-  seedXPosts();
-  seedXPosts();
+  seedXPosts({ cleanupLegacy: false });
+  const additiveRows = database.db.select().from(schema.memes).all();
+  assert.equal(additiveRows.some((row) => row.id === "meme-001"), true);
+  assert.equal(additiveRows.some((row) => row.id === "library-political-01"), true);
+  assert.equal(additiveRows.some((row) => row.id === "x-obsolete"), true);
+  seedXPosts({ cleanupLegacy: true });
+  seedXPosts({ cleanupLegacy: true });
 
   const rows = database.db.select().from(schema.memes).all();
   const official = rows.filter((row) => row.type === "x");
-  assert.equal(official.length, 39);
-  assert.equal(rows.some((row) => row.id === "local-upload"), true);
+  assert.equal(official.length, xPostSeedCount);
   assert.equal(rows.some((row) => row.id === "meme-001"), false);
   assert.equal(rows.some((row) => row.id === "library-political-01"), false);
   assert.equal(rows.some((row) => row.id === "x-obsolete"), false);

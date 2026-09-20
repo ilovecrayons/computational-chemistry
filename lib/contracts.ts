@@ -73,6 +73,7 @@ interface MemeFields {
   likeCount?: number;
   commentCount?: number;
   saved?: boolean;
+  reaction?: Reaction | null;
 }
 
 export type Meme = MemeFields &

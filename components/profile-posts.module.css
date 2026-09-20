@@ -1,0 +1,109 @@
+.section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--divider);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 14px;
+}
+
+.item {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.media {
+  min-width: 0;
+}
+
+.item :global(.meme-media) {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+.item :global(.meme-media:not(.x-media)) {
+  aspect-ratio: 9 / 14;
+}
+
+.item :global(.meme-media.x-media) {
+  display: block;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+  background: var(--surface);
+}
+
+.item :global(.x-embed) {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 14px;
+  color: var(--ink);
+  overflow: visible;
+}
+
+.item :global(.x-embed-heading) {
+  color: var(--muted);
+}
+
+.item :global(.x-embed-heading strong) {
+  color: var(--ink);
+}
+
+.item :global(.x-embed-mark) {
+  width: 24px;
+  height: 24px;
+  color: var(--ink);
+  border-color: var(--divider);
+}
+
+.item :global(.x-embed-frame) {
+  display: block;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.item :global(.x-embed-frame > div) {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.item :global(.x-embed-frame iframe) {
+  display: block;
+  width: 100% !important;
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.item :global(.x-embed-status) {
+  color: var(--muted);
+}
+
+.item :global(.x-embed-fallback) {
+  max-width: none;
+  border-color: var(--divider);
+  background: var(--soft);
+  color: var(--ink);
+}
+
+.item :global(.x-source-link) {
+  display: inline-block;
+  margin-top: 4px;
+}
+
+@media (max-width: 430px) {
+  .item :global(.x-embed) {
+    padding: 12px;
+  }
+}
