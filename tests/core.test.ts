@@ -224,7 +224,7 @@ test("external X posts survive feed, social actions, shared compatibility, and c
   assert.throws(() => feed.setReaction("a", "x-invalid", "like"));
 });
 
-test("a fixed overlap dataset ranks the matching taste above a disjoint taste", () => {
+test("overlapping tastes rank above disjoint tastes without a score floor", () => {
   like("a", "red", 10);
   like("close", "red", 10);
   like("far", "blue", 10);
@@ -233,8 +233,10 @@ test("a fixed overlap dataset ranks the matching taste above a disjoint taste", 
     candidates.map((candidate) => candidate.id),
     ["close", "far"],
   );
-  assert.equal(candidates[0].compatibility.score, 100);
-  assert.equal(candidates[1].compatibility.score, 81);
+  assert.ok(
+    candidates[0].compatibility.score > candidates[1].compatibility.score,
+  );
+  assert.ok(candidates[1].compatibility.score < 81);
   assert.deepEqual(candidates[0].compatibility.sharedTags, [
     "absurd",
     "coding",
@@ -242,6 +244,51 @@ test("a fixed overlap dataset ranks the matching taste above a disjoint taste", 
   assert.equal(candidates[0].compatibility.sharedMemes.length, 2);
   assert.equal("preferences" in candidates[0], false);
   assert.equal("dob" in candidates[0], false);
+});
+
+test("universal shared taste tags retain positive compatibility signal", () => {
+  like("a", "red", 10);
+  like("close", "red", 10);
+  like("far", "red", 10);
+  const scores = engine
+    .getCandidates("a")
+    .map((candidate) => candidate.compatibility.score);
+  assert.ok(scores.every((score) => score > 0));
+  assert.equal(new Set(scores).size, 1);
+});
+
+test("compatibility updates after reactions and honors the match threshold", () => {
+  like("close", "red", 10);
+  like("far", "blue", 10);
+  const before = engine.getCandidates("a");
+  assert.ok(
+    before.every((candidate) => candidate.compatibility.score < 81),
+  );
+
+  like("a", "red", 10);
+  const after = engine.getCandidates("a");
+  const closeBefore = before.find(
+    (candidate) => candidate.id === "close",
+  )!.compatibility.score;
+  const closeAfter = after.find(
+    (candidate) => candidate.id === "close",
+  )!.compatibility.score;
+  const farAfter = after.find(
+    (candidate) => candidate.id === "far",
+  )!.compatibility.score;
+  assert.ok(closeAfter > closeBefore);
+  assert.ok(closeAfter > farAfter);
+
+  const me = profile.getMe("a").profile!;
+  profile.saveProfile("a", {
+    ...me,
+    name: "Alex",
+    preferences: { ...me.preferences, minMatchPercent: closeAfter },
+  });
+  assert.deepEqual(
+    engine.getCandidates("a").map((candidate) => candidate.id),
+    ["close"],
+  );
 });
 
 test("candidate ranking exposes local distance and prioritizes nearby towns", () => {
@@ -259,36 +306,6 @@ test("candidate ranking exposes local distance and prioritizes nearby towns", ()
   );
   assert.equal(candidates[0].distanceMiles, 0);
   assert.ok((candidates[1].distanceMiles ?? 0) > 0);
-});
-
-test("invented scores rank candidates before calibration and honor the match threshold", () => {
-  like("a", "red", 9);
-  like("close", "red", 10);
-  like("far", "blue", 10);
-  feed.setReaction("a", "blue-00", "pass");
-  assert.equal(engine.getTasteprint("a").reactionCount, 10);
-  assert.equal(engine.getTasteprint("a").calibrated, false);
-  assert.equal(
-    engine
-      .getCandidates("a")
-      .every((candidate) => typeof candidate.compatibility.score === "number"),
-    true,
-  );
-  const me = profile.getMe("a").profile!;
-  profile.saveProfile("a", {
-    ...me,
-    name: "Alex",
-    preferences: { ...me.preferences, minMatchPercent: 100 },
-  });
-  assert.deepEqual(engine.getCandidates("a"), []);
-  profile.saveProfile("a", {
-    ...me,
-    name: "Alex",
-    preferences: { ...me.preferences, minMatchPercent: 0 },
-  });
-  feed.setReaction("a", "red-09", "strong-like");
-  assert.equal(engine.getTasteprint("a").calibrated, true);
-  assert.equal(engine.getCandidates("a")[0].compatibility.score, 100);
 });
 
 test("private preferences exclude ranking while browse decisions do not create matches", () => {

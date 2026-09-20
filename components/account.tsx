@@ -925,7 +925,7 @@ export function ProfileForm({
                   aria-label="Minimum meme match"
                 />
                 <small className="supporting">
-                  Only people at or above this made-up score appear in
+                  Only people at or above this humor similarity score appear in
                   Discover.
                 </small>
               </label>
