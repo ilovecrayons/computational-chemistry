@@ -233,6 +233,15 @@ export const matches = sqliteTable(
       .notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     unmatchedAt: integer("unmatched_at", { mode: "timestamp_ms" }),
+    openerMemeId: text("opener_meme_id").references(() => memes.id, {
+      onDelete: "set null",
+    }),
+    openerSenderId: text("opener_sender_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    openerConsumedAt: integer("opener_consumed_at", {
+      mode: "timestamp_ms",
+    }),
   },
   (table) => [uniqueIndex("matches_pair_unique").on(table.userA, table.userB)],
 );

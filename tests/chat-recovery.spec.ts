@@ -62,7 +62,7 @@ async function openFreshConversation(page: Page, baseURL: string) {
   await expect(
     page
       .getByRole("log", { name: "Conversation messages" })
-      .locator(".message p"),
+      .locator(".message > p"),
   ).toHaveText(initial.messages.map((message) => message.body));
   return initial.messages;
 }
@@ -231,11 +231,11 @@ test("a disjoint polling page keeps every intervening message reachable without 
       ...initialMessages.map((message) => message.body),
       ...bodies,
     ];
-    await expect(thread.locator(".message p")).toHaveCount(
+    await expect(thread.locator(".message > p")).toHaveCount(
       expectedBodies.length,
     );
     expect(
-      (await thread.locator(".message p").allTextContents()).sort(),
+      (await thread.locator(".message > p").allTextContents()).sort(),
     ).toEqual(expectedBodies.sort());
     await expect(page.getByLabel("Message", { exact: true })).toHaveValue("");
   } finally {

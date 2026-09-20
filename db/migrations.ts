@@ -80,6 +80,11 @@ DROP TABLE memes;
 ALTER TABLE memes_v5 RENAME TO memes;
 CREATE INDEX memes_status_created_idx ON memes(status,created_at,id);
 `;
+const openerV6 = `
+ALTER TABLE matches ADD COLUMN opener_meme_id TEXT REFERENCES memes(id) ON DELETE SET NULL;
+ALTER TABLE matches ADD COLUMN opener_sender_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE matches ADD COLUMN opener_consumed_at INTEGER;
+`;
 
 function isApplied(database: Database.Database, version: number): boolean {
   return Boolean(
@@ -138,23 +143,38 @@ export function migrate(database: Database.Database) {
     }
   })();
 
-  if (isApplied(database, 5)) return;
-  const foreignKeysEnabled =
-    Number(database.pragma("foreign_keys", { simple: true })) === 1;
-  database.pragma("foreign_keys = OFF");
-  try {
-    const migrateV5 = database.transaction(() => {
-      if (isApplied(database, 5)) return;
-      database.exec(memesV5);
+  if (!isApplied(database, 5)) {
+    const foreignKeysEnabled =
+      Number(database.pragma("foreign_keys", { simple: true })) === 1;
+    database.pragma("foreign_keys = OFF");
+    try {
+      const migrateV5 = database.transaction(() => {
+        if (isApplied(database, 5)) return;
+        database.exec(memesV5);
+        database
+          .prepare(
+            "INSERT INTO schema_migrations(version,applied_at) VALUES(5,?)",
+          )
+          .run(Date.now());
+      });
+      migrateV5();
+    } finally {
+      database.pragma(`foreign_keys = ${foreignKeysEnabled ? "ON" : "OFF"}`);
+    }
+  }
+
+  if (!isApplied(database, 6)) {
+    database.transaction(() => {
+      if (isApplied(database, 6)) return;
+      for (const statement of openerV6.trim().split(";\n")) {
+        if (statement.trim()) database.exec(`${statement.trim()};`);
+      }
       database
         .prepare(
-          "INSERT INTO schema_migrations(version,applied_at) VALUES(5,?)",
+          "INSERT INTO schema_migrations(version,applied_at) VALUES(6,?)",
         )
         .run(Date.now());
-    });
-    migrateV5();
-  } finally {
-    database.pragma(`foreign_keys = ${foreignKeysEnabled ? "ON" : "OFF"}`);
+    })();
   }
 }
 

@@ -1,13 +1,37 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db";
-import { memes, messages, notifications, reactions } from "../../db/schema";
+import {
+  matches,
+  memes,
+  messages,
+  notifications,
+  reactions,
+} from "../../db/schema";
 import { ApiFailure } from "../../lib/api";
 import type { ChatMessage } from "../../lib/contracts";
+import { memeDTO } from "../matching/engine";
 import { isAvailableMeme } from "../memes/availability";
 import { authorizedMatch, matchDTO } from "../matches/matches";
 
+function messageMemeDTO(
+  memeId: string | null,
+  viewerId: string,
+): ChatMessage["meme"] {
+  if (!memeId) return null;
+  const meme = db
+    .select()
+    .from(memes)
+    .where(eq(memes.id, memeId))
+    .get();
+  if (!meme || !isAvailableMeme(meme, viewerId)) return null;
+  try {
+    return memeDTO(meme);
+  } catch {
+    return null;
+  }
+}
 const cursorInput = z.object({
   matchId: z.string(),
   at: z.number().int().nonnegative(),
@@ -59,6 +83,7 @@ export function getMessages(
         senderId: row.senderId,
         body: row.body,
         memeId: row.memeId,
+        meme: messageMemeDTO(row.memeId, userId),
         createdAt: row.createdAt.toISOString(),
       })),
     nextCursor:
@@ -90,18 +115,47 @@ export function sendMessage(
   const value = messageInput.parse(input);
   return db.transaction((tx) => {
     const match = authorizedMatch(userId, matchId);
-    if (value.memeId) {
+    const openerClaimed =
+      tx
+        .update(matches)
+        .set({ openerConsumedAt: new Date() })
+        .where(
+          and(
+            eq(matches.id, matchId),
+            eq(matches.openerSenderId, userId),
+            isNotNull(matches.openerMemeId),
+            isNull(matches.openerConsumedAt),
+          ),
+        )
+        .run().changes > 0;
+    let memeId = value.memeId ?? null;
+    if (openerClaimed) {
+      memeId = null;
+      if (match.openerMemeId) {
+        const opener = tx
+          .select()
+          .from(memes)
+          .where(eq(memes.id, match.openerMemeId))
+          .get();
+        if (
+          opener &&
+          isAvailableMeme(opener, match.userA) &&
+          isAvailableMeme(opener, match.userB)
+        )
+          memeId = opener.id;
+      }
+    } else if (memeId) {
       const meme = tx
         .select()
         .from(memes)
-        .where(eq(memes.id, value.memeId))
+        .where(eq(memes.id, memeId))
         .get();
       const positive = tx
         .select()
         .from(reactions)
         .where(
           and(
-            eq(reactions.memeId, value.memeId),
+            eq(reactions.memeId, memeId),
             or(
               eq(reactions.userId, match.userA),
               eq(reactions.userId, match.userB),
@@ -130,7 +184,7 @@ export function sendMessage(
       matchId,
       senderId: userId,
       body: value.body,
-      memeId: value.memeId ?? null,
+      memeId,
       createdAt: new Date(),
     };
     tx.insert(messages).values(row).run();
@@ -153,6 +207,7 @@ export function sendMessage(
         senderId: row.senderId,
         body: row.body,
         memeId: row.memeId,
+        meme: messageMemeDTO(row.memeId, userId),
         createdAt: row.createdAt.toISOString(),
       },
     };

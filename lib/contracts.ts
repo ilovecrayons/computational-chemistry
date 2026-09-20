@@ -122,6 +122,8 @@ export interface Match {
   createdAt: string;
   lastActivityAt: string;
   lastMessage: string | null;
+  openerMeme: Meme | null;
+  openerPendingForMe: boolean;
 }
 
 export interface ChatMessage {
@@ -129,6 +131,7 @@ export interface ChatMessage {
   senderId: string;
   body: string;
   memeId: string | null;
+  meme: Meme | null;
   createdAt: string;
 }
 

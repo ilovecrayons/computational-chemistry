@@ -562,17 +562,78 @@ test("the fifth distinct positive survives route changes, ignores failures, and 
   expect((await savedResponse.json()).newPositive).toBe(true);
   const suggestion = page.getByRole("dialog", { name: "A possible match" });
   await expect(suggestion).toBeVisible();
+  const decisionRequest = page.waitForRequest(
+    (request) =>
+      new URL(request.url()).pathname === "/api/profile-decisions" &&
+      request.method() === "POST",
+  );
   const matchResponse = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname === "/api/profile-decisions" &&
       response.request().method() === "POST",
   );
   await suggestion.getByRole("button", { name: /^Match with / }).click();
+  const decisionPayload = (await decisionRequest).postDataJSON() as {
+    targetId: string;
+    decision: string;
+    openerMemeId?: string;
+  };
+  expect(decisionPayload.decision).toBe("like");
+  expect(decisionPayload.openerMemeId).toBe(fifthId);
   const matchedResponse = await matchResponse;
   expect(matchedResponse.ok(), await matchedResponse.text()).toBeTruthy();
   const matched = (await matchedResponse.json()) as { match: Match };
   expect(matched.match.id).toBeTruthy();
+  expect(matched.match.openerMeme?.id).toBe(fifthId);
+  expect(matched.match.openerPendingForMe).toBe(true);
   await expect(page).toHaveURL(/view=chats&chat=/);
+  await expect(page.locator(".message-opener-note")).toContainText(
+    "included with your first message",
+  );
+  await expect(page.locator(".composer .check-row")).toHaveCount(0);
+
+  const messageResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname ===
+        `/api/matches/${matched.match.id}/messages` &&
+      response.request().method() === "POST",
+  );
+  const firstMessage = "This one had to be first.";
+  await page.getByLabel("Message", { exact: true }).fill(firstMessage);
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  const sentResponse = await messageResponse;
+  expect(sentResponse.ok(), await sentResponse.text()).toBeTruthy();
+  const sentPayload = sentResponse.request().postDataJSON() as Record<
+    string,
+    unknown
+  >;
+  expect(sentPayload.body).toBe(firstMessage);
+  expect(sentPayload).not.toHaveProperty("memeId");
+  const sent = (await sentResponse.json()) as { message: ChatMessage };
+  expect(sent.message.body).toBe(firstMessage);
+  expect(sent.message.memeId).toBe(fifthId);
+  expect(sent.message.meme?.id).toBe(fifthId);
+  await expect(
+    page.locator(`[data-meme-id="${fifthId}"] .meme-media`),
+  ).toBeVisible();
+  await expectNoOverflow(page);
+
+  const historyResponse = await page.request.get(
+    `/api/matches/${matched.match.id}/messages`,
+  );
+  expect(historyResponse.ok(), await historyResponse.text()).toBeTruthy();
+  const history = (await historyResponse.json()) as { messages: ChatMessage[] };
+  const persistedMessage = history.messages.find(
+    (message) => message.id === sent.message.id,
+  );
+  expect(persistedMessage?.memeId).toBe(fifthId);
+  expect(persistedMessage?.meme?.id).toBe(fifthId);
+
+  await page.reload();
+  await expect(page).toHaveURL(/view=chats&chat=/);
+  await expect(
+    page.locator(`[data-meme-id="${fifthId}"] .meme-media`),
+  ).toBeVisible();
 });
 
 test("all product surfaces fit required widths", async ({ page, baseURL }) => {
