@@ -23,7 +23,6 @@ import {
 } from "../profile/profile";
 import { locationDistanceMiles, locationWithinRadius } from "./location";
 import { isReadyMeme, isValidXPost } from "../memes/availability";
-const MIN_SURFACED_MATCH_SCORE = 81;
 
 export type MemeRow = typeof memes.$inferSelect;
 export function memeDTO(row: MemeRow): Meme {
@@ -101,9 +100,9 @@ export function loadTastes(): {
   for (const taste of tastes.values()) {
     let magnitude = 0;
     for (const tag of Object.keys(taste.weights)) {
-      const idf = Math.log(
-        (calibrated.length + 1) / ((frequency[tag] ?? 0) + 1),
-      );
+      // Keep IDF positive even when a tag appears in every calibrated taste.
+      const idf =
+        Math.log((calibrated.length + 1) / ((frequency[tag] ?? 0) + 1)) + 1;
       taste.weights[tag] *= idf;
       magnitude += taste.weights[tag] ** 2;
     }
@@ -118,6 +117,7 @@ export function loadTastes(): {
 }
 function topTags(taste: Taste | undefined, limit = 5) {
   return Object.entries(taste?.weights ?? {})
+    .filter(([, weight]) => weight > 0)
     .sort(([a, aw], [b, bw]) => bw - aw || a.localeCompare(b))
     .slice(0, limit);
 }
@@ -126,8 +126,6 @@ export function compatibility(
   b: Taste | undefined,
   library: Map<string, MemeRow>,
 ): Compatibility {
-  const calibrated =
-    !!a && !!b && a.positiveCount >= 10 && b.positiveCount >= 10;
   const contributions = Object.entries(a?.weights ?? {})
     .map(([tag, weight]) => ({
       tag,
@@ -156,21 +154,26 @@ export function compatibility(
     .filter((meme): meme is MemeRow => !!meme && isReadyMeme(meme))
     .slice(0, 2)
     .map(memeDTO);
-  const rawScore = calibrated
-    ? Math.round(100 * similarity)
-    : Math.round(45 + 40 * similarity);
-  const score = Math.max(MIN_SURFACED_MATCH_SCORE, rawScore);
+  const score = Math.round(100 * similarity);
+  const overlapExplanation = sharedTags.length
+    ? `Shared ${sharedTags.join(", ")} taste signals.`
+    : "No shared taste signals yet.";
+  const earlySignal =
+    !a ||
+    !b ||
+    a.positiveCount < 10 ||
+    b.positiveCount < 10
+      ? "This comparison has limited signal so far; keep reacting for a clearer tasteprint."
+      : "";
   return {
     score,
     cosine,
     jaccard,
     sharedTags,
     sharedMemes,
-    explanation: calibrated
-      ? sharedTags.length
-        ? `A made-up ${score}% score from shared ${sharedTags.join(", ")} humor signals.`
-        : "A made-up score from the overlap in your current humor signals."
-      : `A made-up starting score of ${score}% until both tasteprints have more signal.`,
+    explanation: [overlapExplanation, earlySignal]
+      .filter(Boolean)
+      .join(" "),
   };
 }
 export function getTasteprint(userId: string): Tasteprint {
@@ -186,7 +189,7 @@ export function getTasteprint(userId: string): Tasteprint {
     tags,
     summary:
       positiveCount < 10
-        ? `${10 - positiveCount} more positive reaction${10 - positiveCount === 1 ? "" : "s"} to unlock meme compatibility. Your choices, not your starter tags, build this tasteprint.`
+        ? `${10 - positiveCount} more positive reaction${10 - positiveCount === 1 ? "" : "s"} to build a clearer tasteprint. Your choices, not your starter tags, shape the comparison.`
         : tags.length
           ? `Your humor leans ${tags
               .slice(0, 3)

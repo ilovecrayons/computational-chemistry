@@ -8,7 +8,7 @@ export interface Preferences {
   minAge: number;
   maxAge: number;
   radiusMiles: RadiusMiles;
-  /** Minimum invented meme-match score required for Discover. */
+  /** Minimum humor similarity score (0-100) required for Discover. */
   minMatchPercent?: number;
 }
 

@@ -342,10 +342,10 @@ For each user and tag:
 A suitable inverse-frequency factor is:
 
 $$
-\log\left(\frac{U+1}{U_t+1}\right)
+1+\log\left(\frac{U+1}{U_t+1}\right)
 $$
 
-Where $U$ is the number of users with enough reactions and $U_t$ is the number of those users who liked tag $t$.
+Where $U$ is the number of users with enough positive reactions and $U_t$ is the number of those users with positive weight for tag $t$. The added 1 preserves shared evidence even when every calibrated user likes the same tag.
 
 ### Compatibility score
 
@@ -354,9 +354,9 @@ Combine two explainable values:
 - 80 percent cosine similarity between normalized weighted tag vectors.
 - 20 percent Jaccard overlap between each user's highest-weight tags.
 
-Return a score from 0 through 100.
+Return the measured similarity as a score from 0 through 100, without a minimum percentage or a starting bonus.
 
-Do not calculate a score until both users have at least 10 positive reactions. Before that threshold, return curated or shuffled candidates with a clear calibration state rather than a fabricated percentage.
+Before both users have at least 10 positive reactions, calculate from the available evidence and mark the explanation as an early estimate. No positive evidence produces a score of 0, not a fabricated high percentage. Recompute Discover scores from current reactions on each candidate request; existing matches retain their creation-time compatibility snapshot.
 
 ### Explanation
 
